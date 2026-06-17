@@ -1,5 +1,5 @@
 {
-    "name": "SoyoRuntimeConsole.Editor",
+    "name": "ThePlayer571.SoyoRuntimeConsole.Editor",
     "rootNamespace": "Soyo.SoyoRuntimeConsole",
     "references": [
         "GUID:ec062c4c5adf6f1438a2d3e9447d504d"

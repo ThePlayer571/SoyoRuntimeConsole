@@ -54,7 +54,6 @@ namespace Soyo.SoyoRuntimeConsole
             TypingParameters
         }
 
-
         [MaybeNull] IReadOnlyList<CommandInfo> CandidateCommands { get; }
         [MaybeNull] IReadOnlyList<string> CandidateParameters { get; }
         private CompletionState State { get; }

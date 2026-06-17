@@ -38,17 +38,22 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 
         public override IEnumerable<string> GetCandidates(string parameter)
         {
-            yield return _fixedString;
+            var core = ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter);
+            if (_fixedString.Contains(core))
+            {
+                yield return _fixedString;
+            }
         }
 
         public override bool ShouldAdvance(string parameter)
         {
-            return parameter.EndsWith(' ');
+            return ParameterHandlerParsingUtility.HasTrailingDelimiter(parameter);
         }
 
         public override bool IsValid(string parameter)
         {
-            return parameter == _fixedString || parameter == $"{_fixedString} ";
+            var core = ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter);
+            return core == _fixedString;
         }
 
         public override bool TryParse(string parameter, out object value)

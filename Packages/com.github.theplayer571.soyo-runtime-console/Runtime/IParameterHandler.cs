@@ -33,12 +33,15 @@ namespace Soyo.SoyoRuntimeConsole
         IEnumerable<string> GetCandidates([DisallowNull] string parameter);
 
         /// <summary>
-        /// 判断当前参数已经完整，该进行下一个参数的解析了（这个方法不用考虑参数是否合法，只需要指导分析器分析）
+        /// 判断当前参数已经完整，该进行下一个参数的解析了
+        /// （分析器会逐字符往后分析，直到该方法返回true）
+        /// （这个方法不用考虑参数是否合法，只需要指导分析器分析）
         /// </summary>
         /// <param name="parameter"></param>
         /// <returns></returns>
         bool ShouldAdvance([DisallowNull] string parameter);
 
+        // 注意：这个插件的参数是不包括分界的，空格代表参数的结尾，而不是参数的分解。这代表parameter可能会包括结尾的空格
         bool IsValid([DisallowNull] string parameter);
 
         // 此函数每次被调用时，已确保IsValid

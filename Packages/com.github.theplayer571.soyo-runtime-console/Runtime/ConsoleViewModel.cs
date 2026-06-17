@@ -57,7 +57,7 @@ namespace Soyo.SoyoRuntimeConsole
                     select candidateParameterString;
 
                 return new Suggestion(
-                    commandCandidates, candidateParameters.ToList(), Suggestion.CompletionState.TypingParameters);
+                    commandCandidates, candidateParameters.Distinct().ToList(), Suggestion.CompletionState.TypingParameters);
             }
         }
 

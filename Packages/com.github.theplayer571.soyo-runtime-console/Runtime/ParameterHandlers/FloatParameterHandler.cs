@@ -1,20 +1,34 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using UnityEngine;
 
 namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 {
-    public class IntegerParameterHandler : ParameterHandlerBase
+    public class FloatParameterHandler : ParameterHandlerBase
     {
-        public IntegerParameterHandler([DisallowNull] string name) : base(name, "Integer")
+        public FloatParameterHandler([DisallowNull] string name) : base(name, "Float")
         {
         }
 
         public override IEnumerable<string> GetCandidates(string parameter)
         {
             var core = ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter);
-            if (string.IsNullOrEmpty(core) || int.TryParse(core, out int result) && result == 0)
+            if (string.IsNullOrEmpty(core))
             {
                 yield return "0";
+                yield return "0.0";
+            }
+            else if (float.TryParse(core, out var result) && Mathf.Approximately(result, 0f))
+            {
+                if (core.Contains("."))
+                {
+                    yield return "0.0";
+                }
+                else
+                {
+                    yield return "0";
+                }
             }
         }
 
@@ -25,12 +39,12 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 
         public override bool IsValid(string parameter)
         {
-            return int.TryParse(ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter), out _);
+            return float.TryParse(ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter), out _);
         }
 
         public override bool TryParse(string parameter, out object value)
         {
-            if (int.TryParse(ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter), out var result))
+            if (float.TryParse(ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter), out var result))
             {
                 value = result;
                 return true;

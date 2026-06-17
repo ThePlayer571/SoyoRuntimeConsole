@@ -1,0 +1,22 @@
+{
+    "name": "ThePlayer571.SoyoRuntimeConsole.Editor.Tests",
+    "rootNamespace": "Soyo.SoyoRuntimeConsole.Tests",
+    "references": [
+        "GUID:ec062c4c5adf6f1438a2d3e9447d504d"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
