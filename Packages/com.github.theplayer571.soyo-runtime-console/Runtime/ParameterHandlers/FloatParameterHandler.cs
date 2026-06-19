@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 {
-    public class FloatParameterHandler : ParameterHandlerBase
+    public class FloatParameterHandler : SpaceSplitParameterHandlerBase
     {
         public FloatParameterHandler([DisallowNull] string name) : base(name, "Float")
         {
@@ -13,15 +13,17 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 
         public override IEnumerable<string> GetCandidates(string parameter)
         {
-            var core = ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter);
-            if (string.IsNullOrEmpty(core))
+            if (string.IsNullOrEmpty(parameter))
             {
                 yield return "0";
                 yield return "0.0";
+                yield break;
             }
-            else if (float.TryParse(core, out var result) && Mathf.Approximately(result, 0f))
+
+            parameter = parameter.Trim();
+            if (float.TryParse(parameter, out var result) && Mathf.Approximately(result, 0f))
             {
-                if (core.Contains("."))
+                if (parameter.Contains("."))
                 {
                     yield return "0.0";
                 }
@@ -32,26 +34,14 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
             }
         }
 
-        public override bool ShouldAdvance(string parameter)
-        {
-            return ParameterHandlerParsingUtility.HasTrailingDelimiter(parameter);
-        }
-
         public override bool IsValid(string parameter)
         {
-            return float.TryParse(ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter), out _);
+            return float.TryParse(parameter.Trim(), out _);
         }
 
-        public override bool TryParse(string parameter, out object value)
+        public override object Parse(string parameter)
         {
-            if (float.TryParse(ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter), out var result))
-            {
-                value = result;
-                return true;
-            }
-
-            value = null;
-            return false;
+            return float.Parse(parameter.Trim());
         }
 
         public override bool IsInitialized => true;

@@ -36,7 +36,8 @@ namespace Soyo.SoyoRuntimeConsole
                     orderby commandDefinition.CommandName.Name.StartsWith(inputCommandName) descending,
                         commandDefinition.CommandName.Name
                     select new ConsoleCommandDesc(commandDefinition, Array.Empty<string>(),
-                        commandDefinition.ParameterHandlers.Count == 0 && commandDefinition.CommandName.Name == inputCommandName);
+                        commandDefinition.ParameterHandlers.Count == 0 &&
+                        commandDefinition.CommandName.Name == inputCommandName);
 
                 return new CommandLineAnalyzeResult(candidateCommandDescs.ToList());
             }
@@ -68,12 +69,13 @@ namespace Soyo.SoyoRuntimeConsole
             // 提前退出：无参
             if (commandDefinition.ParameterHandlers.Count == 0)
             {
-                if (string.IsNullOrWhiteSpace(parametersInput))
+                if (string.IsNullOrEmpty(parametersInput))
                 {
                     return new ConsoleCommandDesc(commandDefinition, Array.Empty<string>(), true);
                 }
                 else
-                { return null;
+                {
+                    return null;
                 }
             }
 
@@ -81,33 +83,58 @@ namespace Soyo.SoyoRuntimeConsole
             var leftInput = parametersInput;
             var parameters = new List<string>();
 
-            foreach (var parameterHandler in commandDefinition.ParameterHandlers)
+            // 尝试根据每个parameterHandler分析参数
+            for (var index = 0; index < commandDefinition.ParameterHandlers.Count; index++)
             {
-                string slice;
-                (slice, leftInput) = CutLeftStringWhenShouldAdvanceOrHasNoInput(leftInput, parameterHandler);
-
-                // 当前切片不合法
-                if (!parameterHandler.IsValid(slice))
+                var parameterHandler = commandDefinition.ParameterHandlers[index];
+                // 无参数可分析：提前退出
+                if (string.IsNullOrEmpty(leftInput))
                 {
-                    // 不合法切片在input中间：不通过
-                    if (!string.IsNullOrWhiteSpace(leftInput))
+                    parameters.Add(string.Empty);
+                    return new ConsoleCommandDesc(commandDefinition, parameters, false);
+                }
+
+                leftInput = CutLeftStringWhenShouldAdvanceOrHasNoInput(leftInput, parameterHandler,
+                    out var slice, out var cutByAdvance);
+
+                var parameterNotValid = !parameterHandler.IsValid(slice);
+                var hasLeftInput = !string.IsNullOrEmpty(leftInput);
+
+                // 处理不合法切片
+                if (parameterNotValid)
+                {
+                    if (hasLeftInput)
+                        // 不合法切片出现在input中间：不通过
                     {
                         return null;
                     }
-                    // 不合法切片在input末尾：认为是未输入完全的参数
                     else
+                        // 不合法切片出现在input末尾：认为是未输入完全的参数，通过
                     {
                         parameters.Add(slice);
                         return new ConsoleCommandDesc(commandDefinition, parameters, false);
                     }
                 }
 
-                // advance
+                // 此时切片全部合法
+                
+                // 处理并非触发advance的切片
+                if (!cutByAdvance)
+                {
+                    // !cutByAdvance => !hasLeftInput
+                    // executable = 全部参数解析完了
+                    bool executable = index == commandDefinition.ParameterHandlers.Count - 1;
+
+                    parameters.Add(slice);
+                    return new ConsoleCommandDesc(commandDefinition, parameters, executable);
+                }
+
+                // advance，分析下一个参数
                 parameters.Add(slice);
             }
 
             // handler遍历完了，但是还有输入：分析不通过
-            if (!string.IsNullOrWhiteSpace(leftInput))
+            if (!string.IsNullOrEmpty(leftInput))
             {
                 return null;
             }
@@ -115,21 +142,28 @@ namespace Soyo.SoyoRuntimeConsole
             // handler遍历完了，参数也都IsValid：分析通过
             return new ConsoleCommandDesc(commandDefinition, parameters, true);
 
-            static (string slice, string leftString) CutLeftStringWhenShouldAdvanceOrHasNoInput(
+            // returns: 裁剪后的leftString
+            [return: NotNull]
+            static string CutLeftStringWhenShouldAdvanceOrHasNoInput(
                 [DisallowNull] string leftString,
-                [DisallowNull] IParameterHandler handler)
+                [DisallowNull] IParameterHandler handler,
+                [NotNull] out string slice,
+                out bool cutByAdvance)
             {
                 var includeIndex = 0;
                 for (; includeIndex < leftString.Length; includeIndex++)
                 {
-                    var slice = leftString[..(includeIndex + 1)];
+                    slice = leftString[..(includeIndex + 1)];
                     if (handler.ShouldAdvance(slice))
                     {
-                        return (slice, leftString[includeIndex..]);
+                        cutByAdvance = true;
+                        return leftString[includeIndex..];
                     }
                 }
 
-                return (leftString, string.Empty);
+                cutByAdvance = false;
+                slice = leftString;
+                return string.Empty;
             }
         }
 

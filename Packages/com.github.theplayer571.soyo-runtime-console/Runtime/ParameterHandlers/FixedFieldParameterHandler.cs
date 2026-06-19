@@ -4,19 +4,19 @@ using UnityEngine;
 
 namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 {
-    public class FixedStringParameterHandler : ParameterHandlerBase
+    public class FixedFieldParameterHandler : SpaceSplitParameterHandlerBase
     {
-        private readonly string _fixedString;
+        private readonly string _fixedField;
 
-        public FixedStringParameterHandler([DisallowNull] string name)
+        public FixedFieldParameterHandler([DisallowNull] string name)
             : base(name, null)
         {
-            _fixedString = name;
+            _fixedField = name;
 
             // 检查 null 或纯空白
             if (string.IsNullOrWhiteSpace(name))
             {
-                Debug.LogError("FixedStringParameterHandler: fixedString cannot be null, empty, or whitespace.");
+                Debug.LogError("FixedFieldParameterHandler: fixedField cannot be null, empty, or whitespace.");
                 IsInitialized = false;
                 return;
             }
@@ -38,28 +38,21 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 
         public override IEnumerable<string> GetCandidates(string parameter)
         {
-            var core = ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter);
-            if (_fixedString.Contains(core))
+            parameter = parameter.Trim();
+            if (_fixedField.Contains(parameter))
             {
-                yield return _fixedString;
+                yield return _fixedField;
             }
-        }
-
-        public override bool ShouldAdvance(string parameter)
-        {
-            return ParameterHandlerParsingUtility.HasTrailingDelimiter(parameter);
         }
 
         public override bool IsValid(string parameter)
         {
-            var core = ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter);
-            return core == _fixedString;
+            return parameter.Trim() == _fixedField;
         }
 
-        public override bool TryParse(string parameter, out object value)
+        public override object Parse(string parameter)
         {
-            value = _fixedString;
-            return true;
+            return null;
         }
 
         public override bool IsInitialized { get; }

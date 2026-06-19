@@ -1,29 +1,38 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using UnityEngine;
 
 namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 {
-    public class EnumParameterHandler : ParameterHandlerBase
+    public class EnumParameterHandler<T> : EnumParameterHandler where T : Enum
+    {
+        public EnumParameterHandler([DisallowNull] string name) : base(name, typeof(T))
+        {
+        }
+    }
+
+    public class EnumParameterHandler : SpaceSplitParameterHandlerBase
     {
         private readonly Type _enumType;
         private readonly string[] _enumNames;
 
-        public EnumParameterHandler([DisallowNull] string name, [AllowNull] Type enumType)
-            : base(name, enumType == null ? "Enum" : enumType.Name)
+        public EnumParameterHandler(
+            [DisallowNull] string name, [DisallowNull] Type enumType)
+            : base(name, enumType.Name)
         {
-            if (enumType == null || !enumType.IsEnum)
+            if (!enumType.IsEnum)
             {
-                Debug.LogError($"EnumParameterHandler: invalid enum type '{enumType?.FullName ?? "null"}'.");
+                Debug.LogError($"EnumParameterHandler: invalid enum type '{enumType.FullName}'.");
                 _enumType = null;
-                _enumNames = Array.Empty<string>();
+                _enumNames = null;
                 IsInitialized = false;
                 return;
             }
 
             _enumType = enumType;
-            _enumNames = Enum.GetNames(enumType);
+            _enumNames = enumType.GetEnumNames();
             IsInitialized = true;
         }
 
@@ -34,8 +43,8 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 yield break;
             }
 
-            var query = ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter);
-            if (string.IsNullOrEmpty(query))
+            parameter = parameter.Trim();
+            if (string.IsNullOrEmpty(parameter))
             {
                 foreach (var enumName in _enumNames)
                 {
@@ -47,16 +56,11 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 
             foreach (var enumName in _enumNames)
             {
-                if (enumName.StartsWith(query, StringComparison.OrdinalIgnoreCase))
+                if (enumName.Contains(parameter, StringComparison.OrdinalIgnoreCase))
                 {
                     yield return enumName;
                 }
             }
-        }
-
-        public override bool ShouldAdvance(string parameter)
-        {
-            return ParameterHandlerParsingUtility.HasTrailingDelimiter(parameter);
         }
 
         public override bool IsValid(string parameter)
@@ -66,28 +70,19 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 return false;
             }
 
-            var core = ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter);
-            for (var i = 0; i < _enumNames.Length; i++)
-            {
-                if (_enumNames[i] == core)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            parameter = parameter.Trim();
+            return _enumNames.Any(t => t == parameter);
         }
 
-        public override bool TryParse(string parameter, out object value)
+        public override object Parse(string parameter)
         {
+            // IsValid相当于加速的Try检查
             if (IsValid(parameter))
             {
-                value = Enum.Parse(_enumType, ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter), false);
-                return true;
+                return Enum.Parse(_enumType, parameter.Trim(), false);
             }
 
-            value = null;
-            return false;
+            return null;
         }
 
         public override bool IsInitialized { get; }

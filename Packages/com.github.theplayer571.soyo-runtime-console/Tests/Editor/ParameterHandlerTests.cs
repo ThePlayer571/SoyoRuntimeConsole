@@ -1,9 +1,8 @@
 using System;
 using NUnit.Framework;
 using Soyo.SoyoRuntimeConsole.ParameterHandlers;
-using UnityEngine;
 
-namespace Soyo.SoyoRuntimeConsole.Tests
+namespace Soyo.SoyoRuntimeConsole.Tests.Tests.Editor
 {
     public class ParameterHandlerTests
     {
@@ -15,7 +14,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests
         }
 
         [Test]
-        public void BooleanParameterHandler_ValidatesAndParsesTrueFalseOnly()
+        public void BooleanParameterHandler()
         {
             var handler = new BooleanParameterHandler("flag");
 
@@ -30,21 +29,19 @@ namespace Soyo.SoyoRuntimeConsole.Tests
 
             Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "true", "false" }));
 
-            Assert.IsTrue(handler.TryParse("true", out var trueValue));
-            Assert.That(trueValue, Is.EqualTo(true));
+            Assert.IsTrue(handler.Parse("true") is true);
 
-            Assert.IsTrue(handler.TryParse("false ", out var falseValue));
-            Assert.That(falseValue, Is.EqualTo(false));
+            Assert.IsTrue(handler.Parse("false ") is false);
         }
 
         [Test]
-        public void StringParameterHandler_SupportsQuotedAndUnquotedStrings()
+        public void StringParameterHandler()
         {
             var handler = new StringParameterHandler("text");
 
             Assert.IsTrue(handler.IsInitialized);
             Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "\"\"" }));
-            
+
             Assert.IsTrue(handler.IsValid("hello"));
             Assert.IsTrue(handler.IsValid("hello world"));
             Assert.IsFalse(handler.IsValid("\"hello"));
@@ -58,15 +55,13 @@ namespace Soyo.SoyoRuntimeConsole.Tests
             Assert.IsTrue(handler.ShouldAdvance("\"hello\" "));
             Assert.IsTrue(handler.ShouldAdvance("\"hello\\\"world\" "));
 
-            Assert.IsTrue(handler.TryParse("hello world", out var rawString));
-            Assert.That(rawString, Is.EqualTo("hello world"));
+            Assert.That(handler.Parse("hello world"), Is.EqualTo("hello world"));
 
-            Assert.IsTrue(handler.TryParse("\"hello\\\"world\"", out var quotedString));
-            Assert.That(quotedString, Is.EqualTo("hello\"world"));
+            Assert.That(handler.Parse("\"hello\\\"world\""), Is.EqualTo("hello\"world"));
         }
 
         [Test]
-        public void EnumParameterHandler_UsesEnumNamesAndCaseSensitiveValidity()
+        public void EnumParameterHandler()
         {
             var handler = new EnumParameterHandler("mode", typeof(SampleEnum));
 
@@ -80,84 +75,13 @@ namespace Soyo.SoyoRuntimeConsole.Tests
             Assert.IsTrue(handler.ShouldAdvance("Alpha "));
             Assert.IsFalse(handler.ShouldAdvance("Alpha"));
 
-            Assert.IsTrue(handler.TryParse("Beta", out var value));
-            Assert.That(value, Is.EqualTo(SampleEnum.Beta));
+            Assert.That((SampleEnum)handler.Parse("Beta"), Is.EqualTo(SampleEnum.Beta));
 
-            Assert.IsTrue(handler.TryParse("Gamma", out var gammaValue));
-            Assert.That(gammaValue, Is.EqualTo(SampleEnum.Gamma));
+            Assert.That((SampleEnum)handler.Parse("Gamma"), Is.EqualTo(SampleEnum.Gamma));
         }
 
         [Test]
-        public void Vector2ParameterHandler_ParsesBracketedFloatTuple()
-        {
-            var handler = new Vector2ParameterHandler("pos2");
-
-            Assert.IsTrue(handler.IsInitialized);
-            Assert.IsTrue(handler.IsValid("(1, 2)"));
-            Assert.IsTrue(handler.IsValid("(1.5, -2.25) "));
-            Assert.IsFalse(handler.IsValid("1, 2"));
-
-            Assert.IsTrue(handler.ShouldAdvance("(1, 2) "));
-            Assert.IsFalse(handler.ShouldAdvance("(1, 2)"));
-
-            Assert.IsTrue(handler.TryParse("(1.5, -2.25)", out var value));
-            Assert.That(value, Is.EqualTo(new Vector2(1.5f, -2.25f)));
-        }
-
-        [Test]
-        public void Vector3ParameterHandler_ParsesBracketedFloatTuple()
-        {
-            var handler = new Vector3ParameterHandler("pos3");
-
-            Assert.IsTrue(handler.IsInitialized);
-            Assert.IsTrue(handler.IsValid("(1, 2, 3)"));
-            Assert.IsTrue(handler.ShouldAdvance("(1, 2, 3) "));
-            Assert.IsTrue(handler.TryParse("(1.25, -2.5, 3.75)", out var value));
-            Assert.That(value, Is.EqualTo(new Vector3(1.25f, -2.5f, 3.75f)));
-        }
-
-        [Test]
-        public void Vector4ParameterHandler_ParsesBracketedFloatTuple()
-        {
-            var handler = new Vector4ParameterHandler("pos4");
-
-            Assert.IsTrue(handler.IsInitialized);
-            Assert.IsTrue(handler.IsValid("(1, 2, 3, 4)"));
-            Assert.IsTrue(handler.ShouldAdvance("(1, 2, 3, 4) "));
-            Assert.IsTrue(handler.TryParse("(1, 2, 3, 4)", out var value));
-            Assert.That(value, Is.EqualTo(new Vector4(1f, 2f, 3f, 4f)));
-        }
-
-        [Test]
-        public void Vector2IntParameterHandler_ParsesBracketedIntegers()
-        {
-            var handler = new Vector2IntParameterHandler("ipos2");
-
-            Assert.IsTrue(handler.IsInitialized);
-            Assert.IsTrue(handler.IsValid("(1, 2)"));
-            Assert.IsFalse(handler.IsValid("(1.0, 2)"));
-            Assert.IsFalse(handler.IsValid("(1., 2)"));
-            Assert.IsTrue(handler.ShouldAdvance("(1, 2) "));
-            Assert.IsTrue(handler.TryParse("(1, 2)", out var value));
-            Assert.That(value, Is.EqualTo(new Vector2Int(1, 2)));
-        }
-
-        [Test]
-        public void Vector3IntParameterHandler_ParsesBracketedIntegers()
-        {
-            var handler = new Vector3IntParameterHandler("ipos3");
-
-            Assert.IsTrue(handler.IsInitialized);
-            Assert.IsTrue(handler.IsValid("(1, 2, 3)"));
-            Assert.IsFalse(handler.IsValid("(1.0, 2, 3)"));
-            Assert.IsFalse(handler.IsValid("(1., 2, 3)"));
-            Assert.IsTrue(handler.ShouldAdvance("(1, 2, 3) "));
-            Assert.IsTrue(handler.TryParse("(1, 2, 3)", out var value));
-            Assert.That(value, Is.EqualTo(new Vector3Int(1, 2, 3)));
-        }
-
-        [Test]
-        public void IntegerParameterHandler_StillParsesWithUtilityDrivenWhitespaceHandling()
+        public void IntegerParameterHandler()
         {
             var handler = new IntegerParameterHandler("count");
 
@@ -168,13 +92,12 @@ namespace Soyo.SoyoRuntimeConsole.Tests
             Assert.IsFalse(handler.IsValid("1."));
             Assert.IsTrue(handler.ShouldAdvance("12 "));
             Assert.IsFalse(handler.ShouldAdvance("12"));
-            Assert.IsTrue(handler.TryParse("12 ", out var value));
-            Assert.That(value, Is.EqualTo(12));
+            Assert.That((int)handler.Parse("12 "), Is.EqualTo(12));
             Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "0" }));
         }
 
         [Test]
-        public void FloatParameterHandler_StillParsesWithUtilityDrivenWhitespaceHandling()
+        public void FloatParameterHandler()
         {
             var handler = new FloatParameterHandler("ratio");
 
@@ -183,14 +106,13 @@ namespace Soyo.SoyoRuntimeConsole.Tests
             Assert.IsTrue(handler.IsValid("1.5 "));
             Assert.IsTrue(handler.ShouldAdvance("1.5 "));
             Assert.IsFalse(handler.ShouldAdvance("1.5"));
-            Assert.IsTrue(handler.TryParse("1.5 ", out var value));
-            Assert.That(value, Is.EqualTo(1.5f));
+            Assert.That((float)handler.Parse("1.5 "), Is.EqualTo(1.5f));
         }
 
         [Test]
-        public void FixedStringParameterHandler_UsesFixedCandidateAndExactMatch()
+        public void FixedStringParameterHandler()
         {
-            var handler = new FixedStringParameterHandler("hello");
+            var handler = new FixedFieldParameterHandler("hello");
 
             Assert.IsTrue(handler.IsInitialized);
             Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "hello" }));
@@ -200,10 +122,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests
             Assert.IsFalse(handler.IsValid("hell"));
             Assert.IsTrue(handler.ShouldAdvance("hello "));
             Assert.IsFalse(handler.ShouldAdvance("hello"));
-            Assert.IsTrue(handler.TryParse("hello", out var value));
-            Assert.That(value, Is.EqualTo("hello"));
+            Assert.That(handler.Parse("hello"), Is.EqualTo("hello"));
         }
     }
 }
-
-

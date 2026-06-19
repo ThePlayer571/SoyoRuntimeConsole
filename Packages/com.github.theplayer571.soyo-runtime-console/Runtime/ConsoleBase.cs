@@ -59,14 +59,8 @@ namespace Soyo.SoyoRuntimeConsole
                     continue;
                 }
 
-                if (parameterHandler.TryParse(parameterString, out var value))
-                {
-                    parameters.Add(value);
-                }
-                else
-                {
-                    parameters.Add(null);
-                }
+                // targetCommand.Executable暗示了parameterHandler.IsValid，因此可以直接Parse
+                parameters.Add(parameterHandler.Parse(parameterString));
             }
 
             targetCommand.Definition.Execute(parameters, this);

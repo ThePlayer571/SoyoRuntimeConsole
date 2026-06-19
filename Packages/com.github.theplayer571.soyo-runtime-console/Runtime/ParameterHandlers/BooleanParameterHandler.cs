@@ -4,61 +4,57 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 {
-    public class BooleanParameterHandler : ParameterHandlerBase
+    public class BooleanParameterHandler : SpaceSplitParameterHandlerBase
     {
         public BooleanParameterHandler([DisallowNull] string name) : base(name, "Boolean")
         {
         }
 
+        private string True => "true";
+        private string False => "false";
+
         public override IEnumerable<string> GetCandidates(string parameter)
         {
-            var query = ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter);
-            if (string.IsNullOrEmpty(query))
+            if (string.IsNullOrEmpty(parameter))
             {
-                yield return "true";
-                yield return "false";
+                yield return True;
+                yield return False;
                 yield break;
             }
 
-            if ("true".StartsWith(query, StringComparison.OrdinalIgnoreCase))
+            parameter = parameter.Trim();
+
+            if (True.StartsWith(parameter, StringComparison.OrdinalIgnoreCase))
             {
-                yield return "true";
+                yield return True;
             }
 
-            if ("false".StartsWith(query, StringComparison.OrdinalIgnoreCase))
+            if (False.StartsWith(parameter, StringComparison.OrdinalIgnoreCase))
             {
-                yield return "false";
+                yield return False;
             }
-        }
-
-        public override bool ShouldAdvance(string parameter)
-        {
-            return ParameterHandlerParsingUtility.HasTrailingDelimiter(parameter);
         }
 
         public override bool IsValid(string parameter)
         {
-            var core = ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter);
-            return core == "true" || core == "false";
+            parameter = parameter.Trim();
+            return parameter == True || parameter == False;
         }
 
-        public override bool TryParse(string parameter, out object value)
+        public override object Parse(string parameter)
         {
-            var core = ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter);
-            if (core == "true")
+            parameter = parameter.Trim();
+            if (parameter == True)
             {
-                value = true;
                 return true;
             }
 
-            if (core == "false")
+            if (parameter == False)
             {
-                value = false;
-                return true;
+                return false;
             }
 
-            value = null;
-            return false;
+            return null;
         }
 
         public override bool IsInitialized => true;

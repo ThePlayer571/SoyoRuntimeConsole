@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 {
-    public class IntegerParameterHandler : ParameterHandlerBase
+    public class IntegerParameterHandler : SpaceSplitParameterHandlerBase
     {
         public IntegerParameterHandler([DisallowNull] string name) : base(name, "Integer")
         {
@@ -11,33 +11,21 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 
         public override IEnumerable<string> GetCandidates(string parameter)
         {
-            var core = ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter);
-            if (string.IsNullOrEmpty(core) || int.TryParse(core, out int result) && result == 0)
+            parameter = parameter.Trim();
+            if (string.IsNullOrEmpty(parameter) || int.TryParse(parameter, out int result) && result == 0)
             {
                 yield return "0";
             }
         }
 
-        public override bool ShouldAdvance(string parameter)
-        {
-            return ParameterHandlerParsingUtility.HasTrailingDelimiter(parameter);
-        }
-
         public override bool IsValid(string parameter)
         {
-            return int.TryParse(ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter), out _);
+            return int.TryParse(parameter.Trim(), out _);
         }
 
-        public override bool TryParse(string parameter, out object value)
+        public override object Parse(string parameter)
         {
-            if (int.TryParse(ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter), out var result))
-            {
-                value = result;
-                return true;
-            }
-
-            value = null;
-            return false;
+            return int.Parse(parameter.Trim());
         }
 
         public override bool IsInitialized => true;

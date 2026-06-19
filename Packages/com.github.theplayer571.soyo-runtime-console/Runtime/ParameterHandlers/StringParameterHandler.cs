@@ -13,7 +13,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         {
             if (string.IsNullOrEmpty(parameter))
             {
-                yield return "\"\"";
+                yield return @"""";
             }
         }
 
@@ -24,51 +24,48 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 return false;
             }
 
-            if (!ParameterHandlerParsingUtility.HasTrailingDelimiter(parameter))
-            {
-                return false;
-            }
+            parameter = ParameterHandlerParsingUtility.NormalizeSpaceSplitParameter(parameter);
 
-            var core = ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter);
-            if (!string.IsNullOrEmpty(core) && core[0] == '"')
-            {
-                // If it's a quoted string, advance only when the quoted string is complete and
-                // the user has typed the trailing delimiter.
-                return ParameterHandlerParsingUtility.TryParseQuotedString(parameter, out _);
-            }
+            var quoted = parameter.StartsWith('"');
 
-            // For unquoted strings, trailing delimiter is enough to advance.
-            return true;
+            if (quoted)
+            {
+                return parameter.Length >= 3 && parameter[^1] == ' ' && parameter[^2] == '"';
+            }
+            else
+            {
+                return parameter.EndsWith(' ');
+            }
         }
 
         public override bool IsValid(string parameter)
         {
-            if (ParameterHandlerParsingUtility.TryParseQuotedString(parameter, out _))
+            parameter = parameter.Trim();
+            var quoted = parameter.StartsWith('"');
+
+            if (quoted)
+            {
+                return parameter.Length >= 2 && parameter[^1] == '"' && parameter.IndexOf('"', 1) < 0;
+            }
+            else
             {
                 return true;
             }
-
-            var core = ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter);
-            return !string.IsNullOrEmpty(core) && core[0] != '"' && core.IndexOf('"') < 0;
         }
 
-        public override bool TryParse(string parameter, out object value)
+        public override object Parse(string parameter)
         {
-            if (ParameterHandlerParsingUtility.TryParseQuotedString(parameter, out var quotedValue))
-            {
-                value = quotedValue;
-                return true;
-            }
+            parameter = parameter.Trim();
+            var quoted = parameter.StartsWith('"');
 
-            var core = ParameterHandlerParsingUtility.TrimTrailingDelimiter(parameter);
-            if (!string.IsNullOrEmpty(core) && core[0] != '"' && core.IndexOf('"') < 0)
+            if (quoted)
             {
-                value = core;
-                return true;
+                return parameter[1..^2];
             }
-
-            value = null;
-            return false;
+            else
+            {
+                return parameter;
+            }
         }
 
         public override bool IsInitialized => true;

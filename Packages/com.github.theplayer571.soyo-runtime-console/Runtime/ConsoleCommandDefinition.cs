@@ -19,6 +19,12 @@ namespace Soyo.SoyoRuntimeConsole
 
         protected ConsoleCommandDefinition(
             [DisallowNull] string name,
+            params IParameterHandler[] parameterHandlers) : this(name, parameterHandlers.AsEnumerable())
+        {
+        }
+
+        protected ConsoleCommandDefinition(
+            [DisallowNull] string name,
             [AllowNull] IEnumerable<IParameterHandler> parameterHandlers)
         {
             _commandName = new CommandName(name);

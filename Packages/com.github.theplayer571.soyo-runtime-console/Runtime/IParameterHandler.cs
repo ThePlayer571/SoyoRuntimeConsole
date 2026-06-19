@@ -21,32 +21,49 @@ namespace Soyo.SoyoRuntimeConsole
             }
         }
 
-
+        /// <summary>
+        /// 获取参数的描述。
+        /// </summary>
+        /// <returns></returns>
         Description GetDescription();
 
         /// <summary>
-        /// 根据输入参数给出推荐，用于提示和补全
+        /// 根据输入参数给出推荐，用于提示和补全。
         /// </summary>
-        /// <param name="parameter">输入的参数（可能不完整）</param>
+        /// <param name="parameter">输入参数（可能不完整）</param>
         /// <returns></returns>
         [return: MaybeNull]
         IEnumerable<string> GetCandidates([DisallowNull] string parameter);
 
         /// <summary>
-        /// 判断当前参数已经完整，该进行下一个参数的解析了
-        /// （分析器会逐字符往后分析，直到该方法返回true）
-        /// （这个方法不用考虑参数是否合法，只需要指导分析器分析）
+        /// 判断当前参数完整性。分析器会逐字符往后分析，直到该方法返回true。
         /// </summary>
+        /// <remarks>这个方法不用考虑参数是否合法。比如IntParameterHandler对输入"abs "返回true，对"12"返回false。</remarks>
         /// <param name="parameter"></param>
         /// <returns></returns>
         bool ShouldAdvance([DisallowNull] string parameter);
 
-        // 注意：这个插件的参数是不包括分界的，空格代表参数的结尾，而不是参数的分解。这代表parameter可能会包括结尾的空格
+        /// <summary>
+        /// 判断参数是否合法，合法的参数才能参与解析。
+        /// </summary>
+        /// <remarks>本插件的CommandLine不存在"参数分界符"这个概念，这意味着CommandLine中的空格会视作参数的一部分。</remarks>
+        /// <param name="parameter"></param>
+        /// <returns></returns>
         bool IsValid([DisallowNull] string parameter);
 
-        // 此函数每次被调用时，已确保IsValid
-        bool TryParse([DisallowNull] string parameter, [MaybeNull] out object value);
+        /// <summary>
+        /// 解析参数。
+        /// 承诺：每次调用这个方法时，parameter一定通过IsValid检查。
+        /// </summary>
+        /// <param name="parameter"></param>
+        /// <returns></returns>
+        [return: MaybeNull]
+        object Parse([DisallowNull] string parameter);
 
+        /// <summary>
+        /// 判断该实例是否成功初始化，标志着是否可以正常使用。
+        /// </summary>
+        /// <remarks>在初始化过程中：如果出现错误，请不要抛出异常，而是将IsInitialized置为false。</remarks>
         bool IsInitialized { get; }
     }
 }

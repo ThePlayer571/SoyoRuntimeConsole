@@ -29,7 +29,9 @@ namespace Soyo.SoyoRuntimeConsole
             public override string ToString()
             {
                 var stringBuilder = new StringBuilder();
-                stringBuilder.Append(AnalyzeResult.Executable ? "✓ ": "✗ ");
+                stringBuilder.Append(AnalyzeResult.Executable ? "✓": "✗");
+
+                stringBuilder.Append(AnalyzeResult.Parameters.Count + " ");
                 
                 
                 if (ParameterDescriptions == null || ParameterDescriptions.Count == 0)

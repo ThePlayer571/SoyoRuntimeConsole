@@ -26,7 +26,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         public abstract IEnumerable<string> GetCandidates(string parameter);
         public abstract bool ShouldAdvance(string parameter);
         public abstract bool IsValid(string parameter);
-        public abstract bool TryParse(string parameter, out object value);
+        public abstract object Parse(string parameter);
         public abstract bool IsInitialized { get; }
     }
 }
