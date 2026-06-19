@@ -19,14 +19,22 @@ namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand
 
         private void OnValidate()
         {
+            RefreshSuggestionDisplay();
+        }
+
+        public void RefreshSuggestionDisplay()
+        {
             if (_viewModel == null)
             {
                 return;
             }
 
-            _viewModel.SetInputText(input);
+            _viewModel.SetInputText(input ?? string.Empty);
             var suggestion = _viewModel.GetSuggestion();
-            suggestionText.text = suggestion.ToString();
+            if (suggestionText != null)
+            {
+                suggestionText.text = suggestion.ToString();
+            }
         }
 
 #if UNITY_EDITOR
@@ -84,6 +92,7 @@ namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand
                     {
                         dc.input = _editorViewModel.InputText;
                         EditorUtility.SetDirty(dc);
+                        dc.RefreshSuggestionDisplay();
                     }
                 }
 
@@ -96,6 +105,7 @@ namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand
                     _editorViewModel.SendInput();
                     dc.input = string.Empty;
                     EditorUtility.SetDirty(dc);
+                    dc.RefreshSuggestionDisplay();
                 }
             }
         }

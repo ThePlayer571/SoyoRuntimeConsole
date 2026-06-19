@@ -19,6 +19,17 @@ parameter handler system.
 When the user mentions **task.md** **交互文件**、**TASKS**、**任务文件**、**需求文件**、**todo**、**任务** or references
 a task/requirement they've "written down", read `TASKS.md` at the repo root and work through the entries there.
 
+## Samples
+
+Samples are authored under `Assets/Samples/` during development. The canonical package location is
+`Packages/com.github.theplayer571.soyo-runtime-console/Samples~` (Unity's `Samples~` convention — hidden from
+the Editor, surfaced in Package Manager for import). If a Sample isn't found in one location, check the other.
+
+## Important: TODOList.md
+
+Do **not** read `TODOList.md` at the repo root. It is the user's personal scratch file and is not intended for
+Claude to consume.
+
 ## Architecture
 
 The core package lives under `Packages/com.github.theplayer571.soyo-runtime-console/` with three assemblies:
