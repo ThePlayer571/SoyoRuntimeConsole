@@ -1,10 +1,8 @@
-using Soyo.SoyoRuntimeConsole;
-using Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Samples.UsingOriginalStyledCommand
+namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand
 {
     [ExecuteAlways]
     public class DisplayController : MonoBehaviour

@@ -13,7 +13,9 @@ namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand
             yield return new HelloContentToneCommand();
             yield return new HelloCuteCommand();
             yield return new HelloFloatCommand();
+            yield return new HelloGreetConfigCommand();
             yield return new HelloIntCommand();
+            yield return new HelloVec3Command();
         }
 
 

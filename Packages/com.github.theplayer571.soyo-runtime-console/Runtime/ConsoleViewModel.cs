@@ -58,9 +58,9 @@ namespace Soyo.SoyoRuntimeConsole
             commandStringBuilder.Append(referenceCommand.AnalyzeResult.Definition.CommandName.Name);
             commandStringBuilder.Append(' ');
 
-            foreach (var parameter in referenceCommand.AnalyzeResult.Parameters.Take(candidateParameters.Count - 1))
+            for (int i = 0; i < referenceCommand.AnalyzeResult.Parameters.Count - 1; i++)
             {
-                commandStringBuilder.Append(parameter);
+                commandStringBuilder.Append(referenceCommand.AnalyzeResult.Parameters[i]);
             }
 
             commandStringBuilder.Append(chosenCandidateParameter);

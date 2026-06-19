@@ -18,8 +18,6 @@ parameter handler system.
 
 When the user mentions **task.md** **交互文件**、**TASKS**、**任务文件**、**需求文件**、**todo**、**任务** or references
 a task/requirement they've "written down", read `TASKS.md` at the repo root and work through the entries there.
-If `TASKS.md` has open tasks, prioritize them over other requests. Mark completed tasks with `<!-- ✓ -->` after the
-heading.
 
 ## Architecture
 
