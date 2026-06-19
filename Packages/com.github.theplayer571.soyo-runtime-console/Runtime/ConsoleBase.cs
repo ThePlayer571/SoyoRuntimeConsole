@@ -86,9 +86,10 @@ namespace Soyo.SoyoRuntimeConsole
         }
 
         // 变量
-        private string _inputText;
+        private string _inputText = string.Empty;
         private readonly List<ConsoleCommandDefinition> _commands = new();
         private readonly CommandLineAnalyzer _commandLineAnalyzer;
+        // todo _commandHelpText定义方式
         private readonly Dictionary<CommandName, string> _commandHelpText = new();
 
         private void AddCommand([DisallowNull] ConsoleCommandDefinition commandDefinition)

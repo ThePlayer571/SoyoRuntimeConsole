@@ -12,16 +12,21 @@ namespace Soyo.SoyoRuntimeConsole
             [NotNull] public string Name { get; }
             [AllowNull] public string HelpText { get; }
             [MaybeNull] public IReadOnlyList<IParameterHandler.Description> ParameterDescriptions { get; }
+            [MaybeNull] public IReadOnlyList<string> CandidateParameters { get; }
+
+
             public ConsoleCommandDesc AnalyzeResult { get; }
 
             public CommandInfo(
                 [DisallowNull] string name, [AllowNull] string helpText,
                 [AllowNull] IReadOnlyList<IParameterHandler.Description> parameterDescriptions,
+                [AllowNull] IReadOnlyList<string> candidateParameters,
                 in ConsoleCommandDesc analyzeResult)
             {
                 Name = name;
                 HelpText = helpText;
                 ParameterDescriptions = parameterDescriptions;
+                CandidateParameters = candidateParameters;
                 AnalyzeResult = analyzeResult;
             }
 
@@ -29,11 +34,11 @@ namespace Soyo.SoyoRuntimeConsole
             public override string ToString()
             {
                 var stringBuilder = new StringBuilder();
-                stringBuilder.Append(AnalyzeResult.Executable ? "✓": "✗");
+                stringBuilder.Append(AnalyzeResult.Executable ? "✓" : "✗");
 
                 stringBuilder.Append(AnalyzeResult.Parameters.Count + " ");
-                
-                
+
+
                 if (ParameterDescriptions == null || ParameterDescriptions.Count == 0)
                 {
                     stringBuilder.Append(Name);
@@ -45,6 +50,10 @@ namespace Soyo.SoyoRuntimeConsole
                 }
 
                 stringBuilder.Append($" - {HelpText}");
+                
+                // 不需要显示参数
+                // stringBuilder.AppendLine();
+                // stringBuilder.Append($"    - {string.Join(',', CandidateParameters ?? new List<string>())}");
 
                 return stringBuilder.ToString();
             }
@@ -56,18 +65,27 @@ namespace Soyo.SoyoRuntimeConsole
             TypingParameters
         }
 
-        [MaybeNull] IReadOnlyList<CommandInfo> CandidateCommands { get; }
-        [MaybeNull] IReadOnlyList<string> CandidateParameters { get; }
+        [MaybeNull] public IReadOnlyList<CommandInfo> CandidateCommands { get; }
+        [MaybeNull] public IReadOnlyList<string> CandidateParameters { get; }
         private CompletionState State { get; }
 
         public Suggestion(
             [AllowNull] IReadOnlyList<CommandInfo> candidateCommands,
-            [AllowNull] IReadOnlyList<string> candidateParameters,
             CompletionState state)
         {
             CandidateCommands = candidateCommands;
-            CandidateParameters = candidateParameters;
             State = state;
+
+            if (candidateCommands == null)
+            {
+                CandidateParameters = null;
+            }
+            else
+            {
+                CandidateParameters = candidateCommands
+                    .SelectMany(commandInfo => commandInfo.CandidateParameters ?? Enumerable.Empty<string>())
+                    .Distinct().ToList();
+            }
         }
 
         [return: NotNull]
@@ -90,7 +108,7 @@ namespace Soyo.SoyoRuntimeConsole
                     stringBuilder.AppendLine($" - {candidateCommand.ToString()}");
                 }
             }
-
+            
             // CandidateParameters
             if (CandidateParameters == null || CandidateParameters.Count == 0)
             {
