@@ -581,8 +581,12 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "CompletionState: TypingParameters\r\nCandidateCommands: \r\n - \u27171
-    hello_vec3 <vec3: Vec3> - \r\nCandidateParameters: (0, 0, true, (0, 0, true)\r\n"
+  m_Text: "CompletionState: TypingCommandName\r\nCandidateCommands: \r\n - \u27170
+    amazing_hello - \r\n - \u27170 hello <bold: > - \r\n - \u27170 hello - \r\n -
+    \u27170 hello <content: String> <tone: HelloTone> - \r\n - \u27170 hello <cute:
+    Boolean> - \r\n - \u27170 hello <content: Float> - \r\n - \u27170 hello <content:
+    String> <config: GreetConfig> - \r\n - \u27170 hello <content: Integer> - \r\n
+    - \u27170 hello_vec3 <vec3: Vec3> - \r\nCandidateParameters: none\r\n"
 --- !u!222 &838812662
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -814,7 +818,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e4fbd1ace3246c69d87392aa37257bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  input: hello_vec3 (0, 0, true
+  input: 
   suggestionText: {fileID: 838812661}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

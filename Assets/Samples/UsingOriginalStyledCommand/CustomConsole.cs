@@ -8,6 +8,7 @@ namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand
         private static IEnumerable<ConsoleCommandDefinition> GetCommands()
         {
             yield return new AmazingHelloCommand();
+            yield return new HelloVector3Command();
             yield return new HelloBoldCommand();
             yield return new HelloCommand();
             yield return new HelloContentToneCommand();
