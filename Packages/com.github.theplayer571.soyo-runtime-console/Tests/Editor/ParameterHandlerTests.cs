@@ -60,11 +60,16 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             var handler = new StringParameterHandler("text");
 
             Assert.IsTrue(handler.IsInitialized);
-            Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { @"""" }));
+            Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { @"""""" }));
+            Assert.That(handler.GetCandidates("hello world"), Is.Empty);
+            Assert.That(handler.GetCandidates(@"""hello worl"), Is.EquivalentTo(new[] { @"""hello worl""" }));
+            
 
             Assert.IsTrue(handler.IsValid("hello"));
             Assert.IsTrue(handler.IsValid("hello world"));
             Assert.IsFalse(handler.IsValid(@"""hello"));
+            Assert.IsTrue(handler.IsValid(@"""hello world"""));
+            Assert.IsTrue(handler.IsValid(@"""hello world"" "));
 
             Assert.IsFalse(handler.ShouldAdvance("hello"));
             Assert.IsTrue(handler.ShouldAdvance("hello "));

@@ -144,10 +144,10 @@ namespace Soyo.SoyoRuntimeConsole
 
             // returns: 裁剪后的leftString
             [return: NotNull]
-            static string CutLeftStringWhenShouldAdvanceOrHasNoInput(
+            static string CutLeftStringWhenShouldAdvanceOrHasNoInput(       
                 [DisallowNull] string leftString,
                 [DisallowNull] IParameterHandler handler,
-                [NotNull] out string slice,
+                [NotNull] out string slice,     
                 out bool cutByAdvance)
             {
                 var includeIndex = 0;
@@ -157,7 +157,7 @@ namespace Soyo.SoyoRuntimeConsole
                     if (handler.ShouldAdvance(slice))
                     {
                         cutByAdvance = true;
-                        return leftString[includeIndex..];
+                        return leftString[(includeIndex + 1)..];
                     }
                 }
 

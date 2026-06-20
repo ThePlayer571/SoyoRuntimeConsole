@@ -18,15 +18,25 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         private readonly IParameterHandler.Description _description;
 
 
+        /// <inheritdoc />
         public IParameterHandler.Description GetDescription()
         {
             return _description;
         }
 
+        /// <inheritdoc />
         public abstract IEnumerable<string> GetCandidates(string parameter);
+
+        /// <inheritdoc />
         public abstract bool ShouldAdvance(string parameter);
+
+        /// <inheritdoc />
         public abstract bool IsValid(string parameter);
+
+        /// <inheritdoc />
         public abstract object Parse(string parameter);
+
+        /// <inheritdoc />
         public abstract bool IsInitialized { get; }
     }
 }

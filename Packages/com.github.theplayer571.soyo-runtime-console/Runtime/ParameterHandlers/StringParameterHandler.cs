@@ -13,7 +13,22 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         {
             if (string.IsNullOrEmpty(parameter))
             {
-                yield return @"""";
+                yield return @"""""";
+            }
+            else if (parameter.StartsWith('"'))
+            {
+                if (parameter.Length == 1)
+                {
+                    yield return @"""""";
+                }
+                else if (parameter[^1] == '"')
+                {
+                    yield return parameter;
+                }
+                else
+                {
+                    yield return parameter + '"';
+                }
             }
         }
 
@@ -45,7 +60,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 
             if (quoted)
             {
-                return parameter.Length >= 2 && parameter[^1] == '"' && parameter.IndexOf('"', 1) < 0;
+                return parameter.Length >= 2 && parameter[^1] == '"' && parameter.EndsWith('"');
             }
             else
             {
