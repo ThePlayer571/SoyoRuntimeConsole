@@ -60,7 +60,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 
             if (quoted)
             {
-                return parameter[1..^2];
+                return parameter.TrimEnd()[1..^1];
             }
             else
             {

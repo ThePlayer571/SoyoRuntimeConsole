@@ -1,6 +1,7 @@
 using System;
 using NUnit.Framework;
 using Soyo.SoyoRuntimeConsole.ParameterHandlers;
+using UnityEngine;
 
 namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 {
@@ -62,20 +63,20 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 
             Assert.IsTrue(handler.IsValid("hello"));
             Assert.IsTrue(handler.IsValid("hello world"));
-            Assert.IsFalse(handler.IsValid("\"hello"));
+            Assert.IsFalse(handler.IsValid(@"""hello"));
 
             Assert.IsFalse(handler.ShouldAdvance("hello"));
             Assert.IsTrue(handler.ShouldAdvance("hello "));
-            Assert.IsFalse(handler.ShouldAdvance("\"hello"));
-            Assert.IsFalse(handler.ShouldAdvance("\"hello "));
-            Assert.IsFalse(handler.ShouldAdvance("\"hello\""));
-            Assert.IsFalse(handler.ShouldAdvance("\"hello\\\"world\""));
-            Assert.IsTrue(handler.ShouldAdvance("\"hello\" "));
-            Assert.IsTrue(handler.ShouldAdvance("\"hello\\\"world\" "));
+            Assert.IsFalse(handler.ShouldAdvance(@"""hello"));
+            Assert.IsFalse(handler.ShouldAdvance(@"""hello "));
+            Assert.IsFalse(handler.ShouldAdvance(@"""hello"""));
+            Assert.IsFalse(handler.ShouldAdvance(@"""hello\""world"""));
+            Assert.IsTrue(handler.ShouldAdvance(@"""hello"" "));
+            Assert.IsTrue(handler.ShouldAdvance(@"""hello\""world"" "));
 
             Assert.That(handler.Parse("hello world"), Is.EqualTo("hello world"));
 
-            Assert.That(handler.Parse("\"hello\\\"world\""), Is.EqualTo("hello\"world"));
+            Assert.That(handler.Parse(@"""hello\""world"""), Is.EqualTo(@"hello\""world"));
         }
 
         [Test]
@@ -273,6 +274,195 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That((int)bracketResult[0], Is.EqualTo(42));
             // 方括号 GetCandidates：前缀为 "["
             Assert.That(bracketHandler.GetCandidates("["), Contains.Item("[0"));
+        }
+
+        [Test]
+        public void Vector2ParameterHandler()
+        {
+            var handler = new Vector2ParameterHandler();
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            // IsValid
+            Assert.IsTrue(handler.IsValid("(1.5, 2.0)"));
+            Assert.IsTrue(handler.IsValid("(1.5, 2.0) "));
+            Assert.IsFalse(handler.IsValid("(1.5)"));
+            Assert.IsFalse(handler.IsValid("(1.5, 2.0, 3.0)"));
+            Assert.IsFalse(handler.IsValid("(abc, 2.0)"));
+
+            // ShouldAdvance
+            Assert.IsFalse(handler.ShouldAdvance("(1.5, 2.0)"));
+            Assert.IsTrue(handler.ShouldAdvance("(1.5, 2.0) "));
+
+            // Parse
+            var result = (Vector2)handler.Parse("(1.5, 2.0)");
+            Assert.That(result.x, Is.EqualTo(1.5f).Within(1e-6f));
+            Assert.That(result.y, Is.EqualTo(2.0f).Within(1e-6f));
+
+            var result2 = (Vector2)handler.Parse("(0.0, 0.0) ");
+            Assert.That(result2.x, Is.EqualTo(0.0f).Within(1e-6f));
+            Assert.That(result2.y, Is.EqualTo(0.0f).Within(1e-6f));
+
+            // GetCandidates
+            Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "(" }));
+            Assert.That(handler.GetCandidates("("), Contains.Item("(0"));
+            Assert.That(handler.GetCandidates("("), Contains.Item("(0.0"));
+            Assert.That(handler.GetCandidates("(1.5,"), Contains.Item("(1.5, 0"));
+            Assert.That(handler.GetCandidates("(1.5,"), Contains.Item("(1.5, 0.0"));
+            Assert.That(handler.GetCandidates("(1.5, 2.0"), Contains.Item("(1.5, 2.0)"));
+            Assert.That(handler.GetCandidates("(1.5, 2.0,"), Is.Empty);
+
+            // GetDescription
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("vector2"));
+            Assert.That(handler.GetDescription().Type, Is.EqualTo("Vector2"));
+        }
+
+        [Test]
+        public void Vector3ParameterHandler()
+        {
+            var handler = new Vector3ParameterHandler();
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            // IsValid
+            Assert.IsTrue(handler.IsValid("(1.0, 2.0, 3.0)"));
+            Assert.IsTrue(handler.IsValid("(1.0, 2.0, 3.0) "));
+            Assert.IsFalse(handler.IsValid("(1.0, 2.0)"));
+            Assert.IsFalse(handler.IsValid("(1.0, 2.0, 3.0, 4.0)"));
+            Assert.IsFalse(handler.IsValid("(abc, 2.0, 3.0)"));
+
+            // ShouldAdvance
+            Assert.IsFalse(handler.ShouldAdvance("(1.0, 2.0, 3.0)"));
+            Assert.IsTrue(handler.ShouldAdvance("(1.0, 2.0, 3.0) "));
+
+            // Parse
+            var result = (Vector3)handler.Parse("(1.0, 2.0, 3.0)");
+            Assert.That(result.x, Is.EqualTo(1.0f).Within(1e-6f));
+            Assert.That(result.y, Is.EqualTo(2.0f).Within(1e-6f));
+            Assert.That(result.z, Is.EqualTo(3.0f).Within(1e-6f));
+
+            // GetCandidates
+            Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "(" }));
+            Assert.That(handler.GetCandidates("("), Contains.Item("(0"));
+            Assert.That(handler.GetCandidates("(1.0, 2.0,"),
+                Contains.Item("(1.0, 2.0, 0"));
+            Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0"), Contains.Item("(1.0, 2.0, 3.0)"));
+            Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0,"), Is.Empty);
+
+            // GetDescription
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("vector3"));
+            Assert.That(handler.GetDescription().Type, Is.EqualTo("Vector3"));
+        }
+
+        [Test]
+        public void Vector4ParameterHandler()
+        {
+            var handler = new Vector4ParameterHandler();
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            // IsValid
+            Assert.IsTrue(handler.IsValid("(1.0, 2.0, 3.0, 4.0)"));
+            Assert.IsTrue(handler.IsValid("(1.0, 2.0, 3.0, 4.0) "));
+            Assert.IsFalse(handler.IsValid("(1.0, 2.0, 3.0)"));
+            Assert.IsFalse(handler.IsValid("(1.0, 2.0, 3.0, 4.0, 5.0)"));
+            Assert.IsFalse(handler.IsValid("(abc, 2.0, 3.0, 4.0)"));
+
+            // ShouldAdvance
+            Assert.IsFalse(handler.ShouldAdvance("(1.0, 2.0, 3.0, 4.0)"));
+            Assert.IsTrue(handler.ShouldAdvance("(1.0, 2.0, 3.0, 4.0) "));
+
+            // Parse
+            var result = (Vector4)handler.Parse("(1.0, 2.0, 3.0, 4.0)");
+            Assert.That(result.x, Is.EqualTo(1.0f).Within(1e-6f));
+            Assert.That(result.y, Is.EqualTo(2.0f).Within(1e-6f));
+            Assert.That(result.z, Is.EqualTo(3.0f).Within(1e-6f));
+            Assert.That(result.w, Is.EqualTo(4.0f).Within(1e-6f));
+
+            // GetCandidates
+            Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "(" }));
+            Assert.That(handler.GetCandidates("("), Contains.Item("(0"));
+            Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0,"),
+                Contains.Item("(1.0, 2.0, 3.0, 0"));
+            Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0, 4.0"),
+                Contains.Item("(1.0, 2.0, 3.0, 4.0)"));
+            Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0, 4.0,"), Is.Empty);
+
+            // GetDescription
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("vector4"));
+            Assert.That(handler.GetDescription().Type, Is.EqualTo("Vector4"));
+        }
+
+        [Test]
+        public void Vector2IntParameterHandler()
+        {
+            var handler = new Vector2IntParameterHandler();
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            // IsValid
+            Assert.IsTrue(handler.IsValid("(1, 2)"));
+            Assert.IsTrue(handler.IsValid("(1, 2) "));
+            Assert.IsFalse(handler.IsValid("(1)"));
+            Assert.IsFalse(handler.IsValid("(1, 2, 3)"));
+            Assert.IsFalse(handler.IsValid("(1.5, 2)"));
+
+            // ShouldAdvance
+            Assert.IsFalse(handler.ShouldAdvance("(1, 2)"));
+            Assert.IsTrue(handler.ShouldAdvance("(1, 2) "));
+
+            // Parse
+            var result = (Vector2Int)handler.Parse("(1, 2)");
+            Assert.That(result.x, Is.EqualTo(1));
+            Assert.That(result.y, Is.EqualTo(2));
+
+            // GetCandidates
+            Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "(" }));
+            Assert.That(handler.GetCandidates("("), Contains.Item("(0"));
+            Assert.That(handler.GetCandidates("(1,"), Contains.Item("(1, 0"));
+            Assert.That(handler.GetCandidates("(1, 2"), Contains.Item("(1, 2)"));
+            Assert.That(handler.GetCandidates("(1, 2,"), Is.Empty);
+
+            // GetDescription
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("vector2int"));
+            Assert.That(handler.GetDescription().Type, Is.EqualTo("Vector2Int"));
+        }
+
+        [Test]
+        public void Vector3IntParameterHandler()
+        {
+            var handler = new Vector3IntParameterHandler();
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            // IsValid
+            Assert.IsTrue(handler.IsValid("(1, 2, 3)"));
+            Assert.IsTrue(handler.IsValid("(1, 2, 3) "));
+            Assert.IsFalse(handler.IsValid("(1, 2)"));
+            Assert.IsFalse(handler.IsValid("(1, 2, 3, 4)"));
+            Assert.IsFalse(handler.IsValid("(1.5, 2, 3)"));
+
+            // ShouldAdvance
+            Assert.IsFalse(handler.ShouldAdvance("(1, 2, 3)"));
+            Assert.IsTrue(handler.ShouldAdvance("(1, 2, 3) "));
+
+            // Parse
+            var result = (Vector3Int)handler.Parse("(1, 2, 3)");
+            Assert.That(result.x, Is.EqualTo(1));
+            Assert.That(result.y, Is.EqualTo(2));
+            Assert.That(result.z, Is.EqualTo(3));
+
+            // GetCandidates
+            Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "(" }));
+            Assert.That(handler.GetCandidates("("), Contains.Item("(0"));
+            Assert.That(handler.GetCandidates("(1, 2,"),
+                Contains.Item("(1, 2, 0"));
+            Assert.That(handler.GetCandidates("(1, 2, 3"), Contains.Item("(1, 2, 3)"));
+            Assert.That(handler.GetCandidates("(1, 2, 3,"), Is.Empty);
+
+            // GetDescription
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("vector3int"));
+            Assert.That(handler.GetDescription().Type, Is.EqualTo("Vector3Int"));
         }
     }
 }
