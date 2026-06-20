@@ -50,14 +50,14 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         }
 
         /// <summary>
-        /// 子参数处理器列表（只读）。
+        /// 子参数处理器列表（只读）。对程序集内可见，供 <see cref="TupleInputNode"/> 递归解析时访问。
         /// </summary>
-        protected IReadOnlyList<IParameterHandler> Handlers => _handlers;
+        protected internal IReadOnlyList<IParameterHandler> Handlers => _handlers;
 
         /// <summary>
-        /// 当前使用的括号类型。
+        /// 当前使用的括号类型。对程序集内可见，供 <see cref="TupleInputNode"/> 递归解析时访问。
         /// </summary>
-        protected BracketType BracketType => _bracketType;
+        protected internal BracketType BracketType => _bracketType;
 
         /// <summary>
         /// 判断该实例是否成功初始化。当所有子处理器均已初始化时返回 true。
@@ -126,18 +126,41 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 return string.IsNullOrWhiteSpace(inner);
             }
 
-            // 按顶层逗号分割（仅在括号深度为 0 的逗号处分割，支持嵌套元组）
-            var parts = SplitByTopLevelComma(inner);
-            if (parts.Length != _handlers.Count)
+            // 使用统一的树解析，然后递归验证
+            var root = ParseInput(parameter);
+
+            if (!root.IsTuple || !root.IsClosed)
             {
                 return false;
             }
 
-            // 每个部分去除首尾空白后分别校验
-            for (var i = 0; i < parts.Length; i++)
+            return ValidateNode(root);
+        }
+
+        /// <summary>
+        /// 递归验证树节点及其所有子节点。
+        /// </summary>
+        private bool ValidateNode(TupleInputNode node)
+        {
+            if (node.IsLeaf)
             {
-                var part = parts[i].Trim();
-                if (!_handlers[i].IsValid(part))
+                return node.Handler.IsValid(node.LeafText);
+            }
+
+            if (!node.IsTuple || !node.IsClosed)
+            {
+                return false;
+            }
+
+            var th = (TupleParameterHandler)node.Handler;
+            if (node.TotalPartCount != th._handlers.Count)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < node.Children.Count; i++)
+            {
+                if (!ValidateNode(node.Children[i]))
                 {
                     return false;
                 }
@@ -162,22 +185,25 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         /// 除当前子参数的局部补全外，始终在列表末尾提供一个"一键填充"完整结果：
         /// 剩余未填写的子参数均使用默认值，并附带闭括号。例如输入 "(" 或 "(0" 时，
         /// 在候选项末尾补充 "(0, 0, 0)"（假设三个 int 子参数，默认值均为 "0"）。
+        ///
+        /// 输入解析委托给 <see cref="ParseInput"/>，其产出 <see cref="TupleInputNode"/> 树，
+        /// 随后通过树遍历确定活跃子处理器、构建前缀并生成候选项。
         /// </remarks>
         public override IEnumerable<string> GetCandidates(string parameter)
         {
-            // 去除前导空格
             parameter = parameter.TrimStart();
             var (open, close) = GetBracketChars();
 
-            // 空输入或仅有空白：给出开括号作为提示，以及完整填充结果
-            if (string.IsNullOrEmpty(parameter))
+            var root = ParseInput(parameter);
+
+            // 空输入：给出开括号提示 + 一键填充完整结果
+            if (root == TupleInputNode.Empty)
             {
                 if (_handlers.Count > 0)
                 {
                     yield return open.ToString();
 
-                    var complete = BuildCompleteResult(open, close,
-                        Array.Empty<string>(), -1, string.Empty);
+                    var complete = BuildCompleteFromTree(root, open, close);
                     if (complete != null)
                     {
                         yield return complete;
@@ -187,94 +213,47 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 yield break;
             }
 
-            // 必须以开括号开头
-            if (parameter[0] != open)
+            // 不以开括号开头：无效
+            if (!root.IsTuple)
             {
                 yield break;
             }
 
-            // 去掉开括号
-            var inner = parameter[1..];
-
-            // 如果末尾有闭括号，去掉（可能后面还跟了空格），同时记录是否存在闭括号。
-            // 需验证移除该闭括号后剩余内容的括号是否平衡：
-            // 若不平衡，说明该闭括号属于内层嵌套元组而非外层闭括号。
-            inner = inner.TrimEnd();
-            var hasCloseBracket = false;
-            if (inner.EndsWith(close.ToString()))
+            // 输入已包含闭括号：用户已表明完结意图，仅返回输入自身
+            if (root.IsClosed)
             {
-                var withoutClose = inner[..^1];
-                if (IsBracketBalanced(withoutClose))
-                {
-                    hasCloseBracket = true;
-                    inner = withoutClose;
-                }
+                yield return parameter.Trim();
+                yield break;
             }
 
-            // 计算顶层逗号数量（仅在括号深度为 0 的逗号处计数，支持嵌套元组），
-            // 确定当前正在输入第几个子参数
-            var commaCount = 0;
-            var lastCommaIndex = -1;
-            var bracketDepth = 0;
-            for (var i = 0; i < inner.Length; i++)
-            {
-                var c = inner[i];
-                if (c == '(' || c == '{' || c == '[')
-                {
-                    bracketDepth++;
-                }
-                else if (c == ')' || c == '}' || c == ']')
-                {
-                    bracketDepth--;
-                }
-                else if (c == ',' && bracketDepth == 0)
-                {
-                    commaCount++;
-                    lastCommaIndex = i;
-                }
-            }
-
-            var currentHandlerIndex = commaCount;
-            if (currentHandlerIndex >= _handlers.Count)
+            // 找到当前层的活跃节点（不递归——递归由各层 TupleParameterHandler.GetCandidates 自行处理）
+            var activeInfo = FindActiveNode(root);
+            if (activeInfo == null)
             {
                 yield break;
             }
 
-            // 前缀：开括号 + 已完成参数（含逗号），规范化逗号后带一个空格
-            var prefix = open.ToString();
-            if (lastCommaIndex >= 0)
+            // 局部补全候选项
             {
-                prefix += inner[..(lastCommaIndex + 1)]; // 包含最后一个逗号
-                prefix = prefix.TrimEnd() + ' '; // 规范化：确保逗号后恰好一个空格
-            }
+                var activeHandler = activeInfo.Handler;
+                var activeText = activeInfo.Text;
+                var prefix = activeInfo.Prefix;
 
-            // 提取最后一个逗号之后的当前部分输入（去除前导空格）
-            var currentPartial = lastCommaIndex >= 0
-                ? inner[(lastCommaIndex + 1)..].TrimStart()
-                : inner;
-
-            // 仅当输入尚未包含闭括号时才提供局部补全候选项
-            if (!hasCloseBracket)
-            {
                 var hasYielded = false;
-                var candidates = _handlers[currentHandlerIndex].GetCandidates(currentPartial);
+                var candidates = activeHandler.GetCandidates(activeText);
                 if (candidates != null)
                 {
-                    var isCurrentPartialEmpty = string.IsNullOrEmpty(currentPartial);
+                    var isActiveTextEmpty = string.IsNullOrEmpty(activeText);
                     foreach (var candidate in candidates)
                     {
                         // 当前子参数输入为空且候选项是纯括号提示（如 "("、"{"、"["）时，
                         // 同时保留括号提示并展开以获取内层值候选项。
-                        // 例如用户输入 "[" 时，"[(" 提示内层括号类型，"[(0" 提供直接可选值。
-                        if (isCurrentPartialEmpty && IsSingleBracket(candidate))
+                        if (isActiveTextEmpty && IsSingleBracket(candidate))
                         {
-                            // 保留括号提示本身
                             hasYielded = true;
                             yield return prefix + candidate;
 
-                            // 展开括号提示，获取内层处理器的首层值候选项
-                            var deeperCandidates =
-                                _handlers[currentHandlerIndex].GetCandidates(candidate);
+                            var deeperCandidates = activeHandler.GetCandidates(candidate);
                             if (deeperCandidates != null)
                             {
                                 foreach (var dc in deeperCandidates)
@@ -295,7 +274,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 // 子处理器无候选项时，回退到用户已输入的原始文本
                 if (!hasYielded)
                 {
-                    var trimmed = currentPartial.Trim();
+                    var trimmed = activeText.Trim();
                     if (!string.IsNullOrEmpty(trimmed))
                     {
                         yield return prefix + trimmed;
@@ -303,111 +282,342 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 }
             }
 
-            // 输入已包含闭括号：用户已表明完结意图，仅返回输入自身
-            if (hasCloseBracket)
-            {
-                yield return parameter.Trim();
-                yield break;
-            }
-
-            // 提取已完成子参数（当前正在输入的子参数之前的部分）
-            var completedParts = new string[currentHandlerIndex];
-            if (currentHandlerIndex > 0)
-            {
-                var beforeLastComma = inner[..lastCommaIndex];
-                var parts = SplitByTopLevelComma(beforeLastComma);
-                for (var i = 0; i < parts.Length && i < currentHandlerIndex; i++)
-                {
-                    completedParts[i] = parts[i].Trim();
-                }
-            }
-
             // 始终在末尾提供"一键填充"完整结果
-            var completeResult = BuildCompleteResult(open, close,
-                completedParts, currentHandlerIndex, currentPartial);
+            var completeResult = BuildCompleteFromTree(root, open, close);
             if (completeResult != null)
             {
                 yield return completeResult;
             }
         }
 
+        // ==================== 树解析 ====================
+
         /// <summary>
-        /// 构建"一键填充"完整结果：已输入的部分保持原样，剩余未填写的子参数使用默认值填充，
-        /// 末尾附带闭括号。
+        /// 递归解析输入字符串为 <see cref="TupleInputNode"/> 树。
+        /// 这是所有解析的单一入口：<see cref="GetCandidates"/>、<see cref="IsValid"/>、
+        /// <see cref="GetParsedSubParameters"/> 均通过此方法获取结构化输入表示。
         /// </summary>
-        /// <returns>完整的结果字符串；若无法获取某个位置的默认值则返回 null。</returns>
-        private string BuildCompleteResult(char open, char close,
-            string[] completedParts, int currentHandlerIndex, string currentPartial)
+        /// <param name="parameter">已去除前导空格的输入字符串</param>
+        /// <returns>解析后的树；输入无效时返回 Empty</returns>
+        private TupleInputNode ParseInput(string parameter)
         {
+            parameter = parameter.TrimStart();
+            if (string.IsNullOrEmpty(parameter))
+            {
+                return TupleInputNode.Empty;
+            }
+
+            var (open, close) = GetBracketChars();
+
+            if (parameter[0] != open)
+            {
+                return TupleInputNode.Empty;
+            }
+
+            // 去掉开括号
+            var inner = parameter[1..];
+
+            // 检测闭括号：若末尾有闭括号且移除后剩余内容括号平衡，
+            // 则该闭括号属于本层元组而非内层嵌套元组
+            inner = inner.TrimEnd();
+            var isClosed = false;
+            if (inner.Length > 0 && inner[^1] == close)
+            {
+                var withoutClose = inner[..^1];
+                if (IsBracketBalanced(withoutClose))
+                {
+                    isClosed = true;
+                    inner = withoutClose;
+                }
+            }
+
+            // 一次遍历：统计顶层逗号并记录位置（替代 SplitByTopLevelComma 的二次遍历）
+            var commaPositions = new List<int>();
+            var depth = 0;
+            for (var i = 0; i < inner.Length; i++)
+            {
+                var c = inner[i];
+                if (c == '(' || c == '{' || c == '[')
+                {
+                    depth++;
+                }
+                else if (c == ')' || c == '}' || c == ']')
+                {
+                    depth--;
+                }
+                else if (c == ',' && depth == 0)
+                {
+                    commaPositions.Add(i);
+                }
+            }
+
+            // 根据逗号位置分割并递归解析已完成子节点
+            var children = new List<TupleInputNode>();
+            var inProgressStart = 0;
+
+            for (var i = 0; i < commaPositions.Count; i++)
+            {
+                var commaPos = commaPositions[i];
+                var part = inner[inProgressStart..commaPos].Trim();
+
+                if (i < _handlers.Count)
+                {
+                    children.Add(CreateChildNode(_handlers[i], part));
+                }
+
+                inProgressStart = commaPos + 1;
+            }
+
+            // 逗号之后的内容 = 正在输入的文本
+            var inProgressText = inner[inProgressStart..].TrimStart();
+
+            // 递归解析 in-progress 文本
+            var currentHandlerIndex = commaPositions.Count;
+            TupleInputNode inProgressChild = null;
+            if (!string.IsNullOrEmpty(inProgressText) && currentHandlerIndex < _handlers.Count)
+            {
+                inProgressChild = CreateChildNode(_handlers[currentHandlerIndex], inProgressText);
+            }
+
+            // 如果已闭合且 in-progress 非空，将其移入 children
+            if (isClosed && inProgressChild != null)
+            {
+                children.Add(inProgressChild);
+                inProgressChild = null;
+                inProgressText = null;
+            }
+            else if (isClosed && !string.IsNullOrEmpty(inProgressText) && inProgressChild == null)
+            {
+                // in-progress 文本未能解析为子节点（如为空或 handler 索引越界）
+                // 但在闭合状态下应视为完整子节点
+                if (currentHandlerIndex < _handlers.Count)
+                {
+                    children.Add(CreateChildNode(_handlers[currentHandlerIndex], inProgressText));
+                    inProgressText = null;
+                }
+            }
+
+            return TupleInputNode.Tuple(
+                handler: this,
+                openChar: open,
+                closeChar: close,
+                isClosed: isClosed,
+                children: children,
+                inProgressText: inProgressText ?? string.Empty,
+                inProgressChild: inProgressChild,
+                totalPartCount: commaPositions.Count + 1);
+        }
+
+        /// <summary>
+        /// 为子处理器创建对应的树节点。若子处理器是 TupleParameterHandler，递归解析；
+        /// 否则创建叶节点。
+        /// </summary>
+        private static TupleInputNode CreateChildNode(IParameterHandler handler, string text)
+        {
+            if (handler is TupleParameterHandler th)
+            {
+                return th.ParseInput(text);
+            }
+
+            return TupleInputNode.Leaf(handler, text);
+        }
+
+        /// <summary>
+        /// 在树中找到当前层的活跃节点——即用户正在输入的子参数位置。
+        /// 不递归进入嵌套元组——嵌套元组由其自身的 GetCandidates 处理。
+        /// 返回活跃子处理器的信息，以及用于候选项的完整前缀。
+        /// </summary>
+        private ActiveNodeInfo FindActiveNode(TupleInputNode root)
+        {
+            if (root == null || !root.IsTuple)
+            {
+                return null;
+            }
+
+            var th = (TupleParameterHandler)root.Handler;
+            var currentIndex = root.CompletedCount;
+
+            // 超出处理器数量
+            if (currentIndex >= th._handlers.Count)
+            {
+                return null;
+            }
+
+            return new ActiveNodeInfo
+            {
+                Handler = th._handlers[currentIndex],
+                Text = root.InProgressText ?? string.Empty,
+                Prefix = BuildNodePrefix(root),
+            };
+        }
+
+        /// <summary>
+        /// 活跃节点查找结果。
+        /// </summary>
+        private sealed class ActiveNodeInfo
+        {
+            /// <summary>应提供候选项的处理器。</summary>
+            public IParameterHandler Handler;
+            /// <summary>传递给 Handler.GetCandidates 的当前输入文本。</summary>
+            public string Text;
+            /// <summary>候选项前缀（从根到活跃节点之前的所有内容）。</summary>
+            public string Prefix;
+        }
+
+        /// <summary>
+        /// 构建元组节点的前缀字符串：开括号 + 已完成子节点的重建文本 + 逗号空格。
+        /// 例如 "(1, " 或 "("（如果无已完成子节点）。
+        /// </summary>
+        private static string BuildNodePrefix(TupleInputNode node)
+        {
+            if (!node.IsTuple)
+            {
+                return string.Empty;
+            }
+
+            var sb = new StringBuilder();
+            sb.Append(node.OpenChar);
+
+            for (var i = 0; i < node.Children.Count; i++)
+            {
+                sb.Append(node.Children[i].Reconstruct());
+                sb.Append(", ");
+            }
+
+            return sb.ToString();
+        }
+
+        // ==================== 一键填充（基于树） ====================
+
+        /// <summary>
+        /// 基于输入树构建"一键填充"完整结果字符串。
+        /// 已输入的子参数保持原样，剩余未填写的使用默认值填充，末尾附带闭括号。
+        /// </summary>
+        private string BuildCompleteFromTree(TupleInputNode root, char open, char close)
+        {
+            if (root == TupleInputNode.Empty)
+            {
+                // 空输入 → 所有字段使用默认值
+                var sb = new StringBuilder();
+                sb.Append(open);
+
+                for (var i = 0; i < _handlers.Count; i++)
+                {
+                    if (i > 0)
+                    {
+                        sb.Append(", ");
+                    }
+
+                    var def = GetDefaultForHandler(_handlers[i]);
+                    if (def == null)
+                    {
+                        return null;
+                    }
+
+                    sb.Append(def);
+                }
+
+                sb.Append(close);
+                return sb.ToString();
+            }
+
+            if (!root.IsTuple)
+            {
+                return null;
+            }
+
+            return BuildCompleteRecursive(root, open, close);
+        }
+
+        /// <summary>
+        /// 递归构建"一键填充"结果字符串。
+        /// </summary>
+        private string BuildCompleteRecursive(TupleInputNode node, char open, char close)
+        {
+            var th = (TupleParameterHandler)node.Handler;
             var sb = new StringBuilder();
             sb.Append(open);
 
-            for (var i = 0; i < _handlers.Count; i++)
+            for (var i = 0; i < th._handlers.Count; i++)
             {
                 if (i > 0)
                 {
                     sb.Append(", ");
                 }
 
-                string value;
-                if (i < currentHandlerIndex)
+                if (i < node.Children.Count)
                 {
-                    // 已完成的子参数，直接使用
-                    value = i < completedParts.Length ? completedParts[i] : string.Empty;
+                    // 已完成的子节点：直接使用重建文本
+                    sb.Append(node.Children[i].Reconstruct());
                 }
-                else if (i == currentHandlerIndex)
+                else if (i == node.CompletedCount && node.InProgressChild != null)
                 {
-                    // 正在输入的子参数：优先使用子处理器的最佳匹配，无匹配则保留原始输入
-                    value = currentPartial.Trim();
-                    if (string.IsNullOrEmpty(value))
+                    // 正在输入的子节点
+                    if (node.InProgressChild.IsLeaf)
                     {
-                        value = GetDefaultForHandler(i);
-                        if (value == null)
+                        var text = node.InProgressChild.LeafText ?? string.Empty;
+                        if (!string.IsNullOrEmpty(text))
                         {
-                            return null;
+                            // 尝试找到最佳匹配
+                            var bestMatch = node.InProgressChild.Handler
+                                .GetCandidates(text)?.FirstOrDefault();
+                            sb.Append(bestMatch ?? text);
+                        }
+                        else
+                        {
+                            var def = GetDefaultForHandler(node.InProgressChild.Handler);
+                            if (def == null)
+                            {
+                                return null;
+                            }
+
+                            sb.Append(def);
                         }
                     }
                     else
                     {
-                        var bestMatch = _handlers[i].GetCandidates(value)?.FirstOrDefault();
-                        if (bestMatch != null)
+                        // In-progress 是嵌套元组 → 递归
+                        var innerResult = BuildCompleteRecursive(
+                            node.InProgressChild,
+                            node.InProgressChild.OpenChar,
+                            node.InProgressChild.CloseChar);
+                        if (innerResult == null)
                         {
-                            value = bestMatch;
+                            return null;
                         }
+
+                        sb.Append(innerResult);
                     }
                 }
                 else
                 {
-                    // 尚未开始的子参数，使用默认值
-                    value = GetDefaultForHandler(i);
-                    if (value == null)
+                    // 尚未开始的子参数：使用默认值
+                    var handler = th._handlers[i];
+                    var def = GetDefaultForHandler(handler);
+                    if (def == null)
                     {
                         return null;
                     }
-                }
 
-                sb.Append(value);
+                    sb.Append(def);
+                }
             }
 
             sb.Append(close);
             return sb.ToString();
         }
 
+        // ==================== 辅助方法 ====================
+
         /// <summary>
-        /// 获取指定子处理器的默认值。
+        /// 获取指定处理器的默认值。
         /// 跳过仅包含单个括号字符的候选项（如 "("、"{"、"["），
         /// 因为这些是 UI 提示而非有效的完整默认值。
-        /// 对于嵌套元组子处理器，需要返回完整的填充结果（如 "(0, 0)"）而非括号提示。
         /// </summary>
         /// <returns>默认值；若无有效候选项则返回 null。</returns>
-        private string GetDefaultForHandler(int index)
+        private static string GetDefaultForHandler(IParameterHandler handler)
         {
-            if (index < 0 || index >= _handlers.Count)
-            {
-                return null;
-            }
-
-            var candidates = _handlers[index].GetCandidates(string.Empty);
+            var candidates = handler.GetCandidates(string.Empty);
             return candidates?.FirstOrDefault(c => !IsSingleBracket(c));
         }
 
@@ -423,6 +633,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 
         /// <summary>
         /// 判断字符串中所有括号是否平衡（每种括号的开闭数量相等，总深度为 0）。
+        /// 支持圆括号 ()、花括号 {}、方括号 [] 三种括号的深度追踪。
         /// 用于区分内层元组的闭括号和外层元组的闭括号。
         /// </summary>
         private static bool IsBracketBalanced(string s)
@@ -439,33 +650,51 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         }
 
         /// <summary>
-        /// 获取子参数的解析结果。将括号内部按逗号分割、去除空白后，
-        /// 依次调用每个子处理器的 <see cref="IParameterHandler.Parse"/> 方法。
+        /// 获取子参数的解析结果。通过解析树遍历将各子节点委托给对应的处理器进行解析。
         /// </summary>
         /// <param name="parameter">已通过 <see cref="IsValid"/> 验证的参数字符串</param>
         /// <returns>各子处理器的解析结果数组</returns>
         protected object[] GetParsedSubParameters([DisallowNull] string parameter)
         {
-            var normalized = parameter.Trim();
-            var (open, close) = GetBracketChars();
-            var inner = normalized[1..^1];
+            var root = ParseInput(parameter.Trim());
+
+            if (!root.IsTuple || !root.IsClosed)
+            {
+                return Array.Empty<object>();
+            }
 
             if (_handlers.Count == 0)
             {
                 return Array.Empty<object>();
             }
 
-            var parts = SplitByTopLevelComma(inner);
-            var results = new object[parts.Length];
-            for (var i = 0; i < parts.Length; i++)
+            var results = new object[root.Children.Count];
+            for (var i = 0; i < root.Children.Count; i++)
             {
-                results[i] = _handlers[i].Parse(parts[i].Trim());
+                results[i] = ParseChild(root.Children[i]);
             }
 
             return results;
         }
 
-        private (char open, char close) GetBracketChars()
+        /// <summary>
+        /// 递归解析子节点。叶节点委托给处理器；嵌套元组重建完整文本后委托给其处理器。
+        /// </summary>
+        private static object ParseChild(TupleInputNode node)
+        {
+            if (node.IsLeaf)
+            {
+                return node.Handler.Parse(node.LeafText);
+            }
+
+            // 嵌套元组：重建完整括号文本 → 委托给元组处理器的 Parse
+            return node.Handler.Parse(node.Reconstruct());
+        }
+
+        /// <summary>
+        /// 获取当前元组的开/闭括号字符对。
+        /// </summary>
+        internal (char open, char close) GetBracketChars()
         {
             return _bracketType switch
             {
@@ -474,40 +703,6 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 BracketType.Brackets => ('[', ']'),
                 _ => throw new ArgumentOutOfRangeException(nameof(_bracketType), _bracketType, null)
             };
-        }
-
-        /// <summary>
-        /// 按逗号分割字符串，但仅在括号深度为 0（顶层）的逗号处分割。
-        /// 支持圆括号 ()、花括号 {}、方括号 [] 三种括号的嵌套深度追踪。
-        /// </summary>
-        /// <param name="input">待分割的字符串</param>
-        /// <returns>按顶层逗号分割后的子字符串数组</returns>
-        private static string[] SplitByTopLevelComma(string input)
-        {
-            var parts = new System.Collections.Generic.List<string>();
-            var depth = 0;
-            var start = 0;
-
-            for (var i = 0; i < input.Length; i++)
-            {
-                var c = input[i];
-                if (c == '(' || c == '{' || c == '[')
-                {
-                    depth++;
-                }
-                else if (c == ')' || c == '}' || c == ']')
-                {
-                    depth--;
-                }
-                else if (c == ',' && depth == 0)
-                {
-                    parts.Add(input[start..i]);
-                    start = i + 1;
-                }
-            }
-
-            parts.Add(input[start..]);
-            return parts.ToArray();
         }
     }
 }

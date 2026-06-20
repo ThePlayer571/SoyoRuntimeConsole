@@ -116,7 +116,7 @@ namespace Soyo.SoyoRuntimeConsole
             }
             else
             {
-                stringBuilder.AppendLine($"CandidateParameters: {string.Join(", ", CandidateParameters)}");
+                stringBuilder.AppendLine($"CandidateParameters: {string.Join(" || ", CandidateParameters)}");
             }
 
             return stringBuilder.ToString();

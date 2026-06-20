@@ -583,7 +583,7 @@ MonoBehaviour:
     m_LineSpacing: 1
   m_Text: "CompletionState: TypingParameters\r\nCandidateCommands: \r\n - \u27171
     hello_nested <nested_greet: NestedGreet> - \r\nCandidateParameters: ((Normal,
-    true, ((Normal, false, ((Normal, true), ((Normal, true, 0)\r\n"
+    true, ((Normal, true), ((Normal, true), 0)\r\n"
 --- !u!222 &838812662
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -815,7 +815,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e4fbd1ace3246c69d87392aa37257bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  input: hello_nested ((Normal,
+  input: hello_nested ((Normal, true
   suggestionText: {fileID: 838812661}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
