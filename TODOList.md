@@ -3,6 +3,11 @@
 ```
 
 目前的Sample太垃圾了
+- 包括：
+- 基础的greet string/ string int count / string cute bool
+- 自定义类，嵌套元组，组合器
+
+补全所有测试
 
 
 列表参数

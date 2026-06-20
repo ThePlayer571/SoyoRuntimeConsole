@@ -81,21 +81,26 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 
             var (open, close) = GetBracketChars();
 
-            // 必须以开括号开头
-            if (parameter[0] != open)
-            {
-                return false;
-            }
+            var startsWithOpen = parameter[0] == open;
 
-            // 必须以空格结尾（与其他 handler 一致的 advance 约定）
-            if (!parameter.EndsWith(' '))
+            // 以开括号开头
+            if (startsWithOpen)
             {
-                return false;
-            }
+                // 必须以空格结尾（与其他 handler 一致的 advance 约定）
+                if (!parameter.EndsWith(' '))
+                {
+                    return false;
+                }
 
-            // 空格之前的字符必须是闭括号
-            var withoutTrailingSpaces = parameter.TrimEnd();
-            return withoutTrailingSpaces.Length >= 2 && withoutTrailingSpaces[^1] == close;
+                // 空格之前的字符必须是闭括号
+                var withoutTrailingSpaces = parameter.TrimEnd();
+                return withoutTrailingSpaces.Length >= 2 && withoutTrailingSpaces[^1] == close;
+            }
+            else
+            {
+                // 不以开括号开头：这是完全不可理喻的参数，按照空格分隔
+                return parameter.EndsWith(' ');
+            }
         }
 
         /// <inheritdoc />
@@ -129,7 +134,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
             // 使用统一的树解析，然后递归验证
             var root = ParseInput(parameter);
 
-            if (!root.IsTuple || !root.IsClosed)
+            if (root.IsParseFailed || !root.IsTuple || !root.IsClosed)
             {
                 return false;
             }
@@ -195,6 +200,12 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
             var (open, close) = GetBracketChars();
 
             var root = ParseInput(parameter);
+
+            // 输入完全不成立 → 无候选项
+            if (root.IsParseFailed)
+            {
+                yield break;
+            }
 
             // 空输入：给出开括号提示 + 一键填充完整结果
             if (root == TupleInputNode.Empty)
@@ -298,7 +309,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         /// <see cref="GetParsedSubParameters"/> 均通过此方法获取结构化输入表示。
         /// </summary>
         /// <param name="parameter">已去除前导空格的输入字符串</param>
-        /// <returns>解析后的树；输入无效时返回 Empty</returns>
+        /// <returns>解析后的树；输入为空时返回 <see cref="TupleInputNode.Empty"/>，不成立时返回 <see cref="TupleInputNode.Failed"/></returns>
         private TupleInputNode ParseInput(string parameter)
         {
             parameter = parameter.TrimStart();
@@ -309,9 +320,10 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 
             var (open, close) = GetBracketChars();
 
+            // 不成立：非空但首字符不是本处理器的开括号
             if (parameter[0] != open)
             {
-                return TupleInputNode.Empty;
+                return TupleInputNode.Failed(parameter);
             }
 
             // 去掉开括号
@@ -458,8 +470,10 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         {
             /// <summary>应提供候选项的处理器。</summary>
             public IParameterHandler Handler;
+
             /// <summary>传递给 Handler.GetCandidates 的当前输入文本。</summary>
             public string Text;
+
             /// <summary>候选项前缀（从根到活跃节点之前的所有内容）。</summary>
             public string Prefix;
         }
@@ -553,7 +567,22 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 else if (i == node.CompletedCount && node.InProgressChild != null)
                 {
                     // 正在输入的子节点
-                    if (node.InProgressChild.IsLeaf)
+                    if (node.InProgressChild.IsParseFailed)
+                    {
+                        // 解析不成立：使用原始文本
+                        var rawText = node.InProgressChild.LeafText ?? string.Empty;
+                        if (!string.IsNullOrEmpty(rawText))
+                        {
+                            sb.Append(rawText);
+                        }
+                        else
+                        {
+                            var def = GetDefaultForHandler(th._handlers[i]);
+                            if (def == null) return null;
+                            sb.Append(def);
+                        }
+                    }
+                    else if (node.InProgressChild.IsLeaf)
                     {
                         var text = node.InProgressChild.LeafText ?? string.Empty;
                         if (!string.IsNullOrEmpty(text))
@@ -658,7 +687,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         {
             var root = ParseInput(parameter.Trim());
 
-            if (!root.IsTuple || !root.IsClosed)
+            if (root.IsParseFailed || !root.IsTuple || !root.IsClosed)
             {
                 return Array.Empty<object>();
             }
@@ -682,6 +711,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         /// </summary>
         private static object ParseChild(TupleInputNode node)
         {
+            if (node.IsParseFailed) throw new ArgumentException("ParseChild called on a failed node.", nameof(node));
             if (node.IsLeaf)
             {
                 return node.Handler.Parse(node.LeafText);

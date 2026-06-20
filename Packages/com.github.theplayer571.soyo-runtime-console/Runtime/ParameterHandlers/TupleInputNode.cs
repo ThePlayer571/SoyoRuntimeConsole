@@ -9,9 +9,10 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
     /// 将输入字符串一次性解析为嵌套结构，每个节点携带对应的 <see cref="IParameterHandler"/>，
     /// 以便解析时正确理解内容边界（例如字符串内的逗号不应被当作元组分隔符）。
     ///
-    /// 节点有三种形态：
+    /// 节点有四种形态：
     /// <list type="bullet">
     /// <item><see cref="IsEmpty"/>: 输入为空</item>
+    /// <item><see cref="IsParseFailed"/>: 解析不成立 — 输入非空但不匹配处理器的括号格式</item>
     /// <item><see cref="IsLeaf"/>: 叶节点 — 由非 TupleParameterHandler 的处理器负责，文本原样保留</item>
     /// <item><see cref="IsTuple"/>: 元组节点 — 由 TupleParameterHandler 负责，包含已完成的子节点和正在输入的文本</item>
     /// </list>
@@ -55,11 +56,14 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         /// <summary>输入是否为空（null / 空字符串 / 纯空白）。</summary>
         public bool IsEmpty { get; }
 
+        /// <summary>解析是否不成立（输入非空但首字符不匹配处理器的开括号）。</summary>
+        public bool IsParseFailed { get; }
+
         /// <summary>是否为元组节点。</summary>
-        public bool IsTuple => !IsEmpty && OpenChar != '\0';
+        public bool IsTuple => !IsEmpty && !IsParseFailed && OpenChar != '\0';
 
         /// <summary>是否为叶节点。</summary>
-        public bool IsLeaf => !IsEmpty && OpenChar == '\0';
+        public bool IsLeaf => !IsEmpty && !IsParseFailed && OpenChar == '\0';
 
         /// <summary>已完成子节点的数量。</summary>
         public int CompletedCount => Children?.Count ?? 0;
@@ -84,6 +88,14 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         {
             Handler = handler ?? throw new ArgumentNullException(nameof(handler));
             LeafText = leafText ?? string.Empty;
+            Children = Array.Empty<TupleInputNode>();
+            InProgressText = string.Empty;
+        }
+
+        private TupleInputNode(string rawText)
+        {
+            IsParseFailed = true;
+            LeafText = rawText ?? string.Empty;
             Children = Array.Empty<TupleInputNode>();
             InProgressText = string.Empty;
         }
@@ -113,6 +125,13 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 
         /// <summary>空输入单例。</summary>
         public static readonly TupleInputNode Empty = new TupleInputNode();
+
+        /// <summary>创建解析不成立节点（输入非空但不匹配括号格式）。</summary>
+        /// <param name="rawText">原始输入文本，用于 <see cref="Reconstruct"/> 还原</param>
+        public static TupleInputNode Failed(string rawText)
+        {
+            return new TupleInputNode(rawText);
+        }
 
         /// <summary>创建叶节点。</summary>
         public static TupleInputNode Leaf(IParameterHandler handler, string text)
@@ -144,6 +163,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         public string Reconstruct()
         {
             if (IsEmpty) return string.Empty;
+            if (IsParseFailed) return LeafText ?? string.Empty;
             if (IsLeaf) return LeafText ?? string.Empty;
 
             var sb = new StringBuilder();
@@ -170,6 +190,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         public override string ToString()
         {
             if (IsEmpty) return "<Empty>";
+            if (IsParseFailed) return $"<Failed: '{LeafText}'>";
             if (IsLeaf) return $"<Leaf: '{LeafText}'>";
             return $"<Tuple: {OpenChar}...{(IsClosed ? CloseChar.ToString() : "")} children={Children.Count}>";
         }

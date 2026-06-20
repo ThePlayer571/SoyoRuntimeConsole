@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Soyo.SoyoRuntimeConsole.ParameterHandlers;
 using UnityEngine;
 
 namespace Soyo.SoyoRuntimeConsole
@@ -109,15 +110,24 @@ namespace Soyo.SoyoRuntimeConsole
                         return null;
                     }
                     else
-                        // 不合法切片出现在input末尾：认为是未输入完全的参数，通过
+                        // 不合法切片出现在input末尾：认为是未输入完全的参数
                     {
-                        parameters.Add(slice);
-                        return new ConsoleCommandDesc(commandDefinition, parameters, false);
+                        // 如果是正常advance了，代表是参数输入结束且不合法：不通过
+                        if (cutByAdvance)
+                        {
+                            return null;
+                        }
+                        // 如果是没有advance的，代表是参数输入未结束且不合法：认为是未输入完全的参数，暂时接受
+                        else
+                        {
+                            parameters.Add(slice);
+                            return new ConsoleCommandDesc(commandDefinition, parameters, false);
+                        }
                     }
                 }
 
                 // 此时切片全部合法
-                
+
                 // 处理并非触发advance的切片
                 if (!cutByAdvance)
                 {
@@ -144,10 +154,10 @@ namespace Soyo.SoyoRuntimeConsole
 
             // returns: 裁剪后的leftString
             [return: NotNull]
-            static string CutLeftStringWhenShouldAdvanceOrHasNoInput(       
+            static string CutLeftStringWhenShouldAdvanceOrHasNoInput(
                 [DisallowNull] string leftString,
                 [DisallowNull] IParameterHandler handler,
-                [NotNull] out string slice,     
+                [NotNull] out string slice,
                 out bool cutByAdvance)
             {
                 var includeIndex = 0;

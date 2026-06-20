@@ -223,6 +223,9 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
                 Is.EquivalentTo(new[] { "(1, 0.5, true)" }));
             // 超出处理器数量 → 无候选项
             Assert.That(handler.GetCandidates("(1, 0.5, true,"), Is.Empty);
+            // 输入完全不成立（不以开括号开头）→ 无候选项
+            Assert.That(handler.GetCandidates("1"), Is.Empty);
+            Assert.That(handler.GetCandidates("abc"), Is.Empty);
 
             // GetDescription
             Assert.That(handler.GetDescription().Name, Is.EqualTo("vector"));
@@ -248,6 +251,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 
             // GetCandidates：无子处理器时不产生候选项
             Assert.That(handler.GetCandidates(string.Empty), Is.Empty);
+            // 输入完全不成立 → 无候选项
+            Assert.That(handler.GetCandidates("1"), Is.Empty);
 
             // Parse
             var result = (object[])handler.Parse("{} ");
@@ -270,6 +275,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That((int)braceResult[0], Is.EqualTo(42));
             // 花括号 GetCandidates：前缀为 "{"
             Assert.That(braceHandler.GetCandidates("{"), Contains.Item("{0"));
+            // 输入不以花括号开头 → 无候选项
+            Assert.That(braceHandler.GetCandidates("1"), Is.Empty);
 
             // 方括号 []
             var bracketHandler = new TestTupleHandler("b", "T", BracketType.Brackets,
@@ -284,6 +291,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That((int)bracketResult[0], Is.EqualTo(42));
             // 方括号 GetCandidates：前缀为 "["
             Assert.That(bracketHandler.GetCandidates("["), Contains.Item("[0"));
+            // 输入不以方括号开头 → 无候选项
+            Assert.That(bracketHandler.GetCandidates("1"), Is.Empty);
         }
 
         [Test]
@@ -322,6 +331,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(handler.GetCandidates("(1.5,"), Contains.Item("(1.5, 0.0"));
             Assert.That(handler.GetCandidates("(1.5, 2.0"), Contains.Item("(1.5, 2.0)"));
             Assert.That(handler.GetCandidates("(1.5, 2.0,"), Is.Empty);
+            // 输入完全不成立（不以开括号开头）→ 无候选项
+            Assert.That(handler.GetCandidates("1"), Is.Empty);
 
             // GetDescription
             Assert.That(handler.GetDescription().Name, Is.EqualTo("vector2"));
@@ -360,6 +371,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
                 Contains.Item("(1.0, 2.0, 0"));
             Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0"), Contains.Item("(1.0, 2.0, 3.0)"));
             Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0,"), Is.Empty);
+            // 输入完全不成立（不以开括号开头）→ 无候选项
+            Assert.That(handler.GetCandidates("1"), Is.Empty);
 
             // GetDescription
             Assert.That(handler.GetDescription().Name, Is.EqualTo("vector3"));
@@ -400,6 +413,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0, 4.0"),
                 Contains.Item("(1.0, 2.0, 3.0, 4.0)"));
             Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0, 4.0,"), Is.Empty);
+            // 输入完全不成立（不以开括号开头）→ 无候选项
+            Assert.That(handler.GetCandidates("1"), Is.Empty);
 
             // GetDescription
             Assert.That(handler.GetDescription().Name, Is.EqualTo("vector4"));
@@ -439,6 +454,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(handler.GetCandidates("(1, 2)"),
                 Is.EquivalentTo(new[] { "(1, 2)" }));
             Assert.That(handler.GetCandidates("(1, 2,"), Is.Empty);
+            // 输入完全不成立（不以开括号开头）→ 无候选项
+            Assert.That(handler.GetCandidates("1"), Is.Empty);
 
             // GetDescription
             Assert.That(handler.GetDescription().Name, Is.EqualTo("vector2int"));
@@ -477,6 +494,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
                 Contains.Item("(1, 2, 0"));
             Assert.That(handler.GetCandidates("(1, 2, 3"), Contains.Item("(1, 2, 3)"));
             Assert.That(handler.GetCandidates("(1, 2, 3,"), Is.Empty);
+            // 输入完全不成立（不以开括号开头）→ 无候选项
+            Assert.That(handler.GetCandidates("1"), Is.Empty);
 
             // GetDescription
             Assert.That(handler.GetDescription().Name, Is.EqualTo("vector3int"));
@@ -736,6 +755,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
                 Is.EquivalentTo(new[] { "((1, 2), true)" }));
             // 超出处理器数量 → 无候选项
             Assert.That(handler.GetCandidates("((1, 2), true,"), Is.Empty);
+            // 输入完全不成立（不以开括号开头）→ 无候选项
+            Assert.That(handler.GetCandidates("1"), Is.Empty);
 
             // GetDescription
             Assert.That(handler.GetDescription().Name, Is.EqualTo("nested"));
@@ -787,6 +808,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             // 输入 "[(1, 2), " → 第二个内部元组候选项（花括号前缀）
             Assert.That(handler.GetCandidates("[(1, 2), "), Contains.Item("[(1, 2), {true"));
             Assert.That(handler.GetCandidates("[(1, 2), "), Contains.Item("[(1, 2), {false"));
+            // 输入不以方括号开头 → 无候选项
+            Assert.That(handler.GetCandidates("1"), Is.Empty);
 
             // GetDescription
             Assert.That(handler.GetDescription().Name, Is.EqualTo("mixed"));
@@ -842,6 +865,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             // 输入已包含闭括号 → 仅返回输入自身
             Assert.That(handler.GetCandidates("((1, 2), (3.0, 4.0), true)"),
                 Is.EquivalentTo(new[] { "((1, 2), (3.0, 4.0), true)" }));
+            // 输入完全不成立（不以开括号开头）→ 无候选项
+            Assert.That(handler.GetCandidates("1"), Is.Empty);
 
             // GetDescription
             Assert.That(handler.GetDescription().Name, Is.EqualTo("deep"));
