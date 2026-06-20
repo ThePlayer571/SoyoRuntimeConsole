@@ -190,8 +190,9 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 
             // GetCandidates：候选项包含完整前缀（开括号 + 已完成子参数 + 逗号）
             // 因为自动补全会用候选项替换最后一个参数
-            // 空输入 → 给出开括号提示
-            Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "(" }));
+            // 空输入 → 给出开括号提示 + 一键填充完整结果
+            Assert.That(handler.GetCandidates(string.Empty),
+                Is.EquivalentTo(new[] { "(", "(0, 0, true)" }));
             // 刚输入 "(" → 第一个参数候选项带前缀
             Assert.That(handler.GetCandidates("("), Contains.Item("(0"));
             // 输入 "(1," → 第二个参数候选项，前缀规范化后为 "(1, "
@@ -199,18 +200,21 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(handler.GetCandidates("(1,"), Contains.Item("(1, 0.0"));
             // 输入 "(1, 0." → 第二个参数候选项，前缀为 "(1, "
             Assert.That(handler.GetCandidates("(1, 0."), Contains.Item("(1, 0.0"));
-            // 输入 "(1, 0.5," → 第三个参数候选项，前缀为 "(1, 0.5,"
+            // 输入 "(1, 0.5," → 第三个参数候选项，前缀为 "(1, 0.5,"；末尾附带完整填充结果
             Assert.That(handler.GetCandidates("(1, 0.5,"),
-                Is.EquivalentTo(new[] { "(1, 0.5, true", "(1, 0.5, false" }));
+                Is.EquivalentTo(new[] { "(1, 0.5, true", "(1, 0.5, false", "(1, 0.5, true)" }));
             // 输入 "(1, 0.5, t" → 第三个参数候选项，正在输入 "t"
             Assert.That(handler.GetCandidates("(1, 0.5, t"), Contains.Item("(1, 0.5, true"));
-            // 最后一个参数已输入完整 → 提示闭括号
+            // 最后一个参数已输入完整 → 通过完整填充结果附带闭括号
             Assert.That(handler.GetCandidates("(1, 0.5, true"), Contains.Item("(1, 0.5, true)"));
-            // 最后一个参数完整但带尾随空格 → 也提示闭括号
+            // 最后一个参数完整但带尾随空格 → 通过完整填充结果附带闭括号
             Assert.That(handler.GetCandidates("(1, 0.5, true "), Contains.Item("(1, 0.5, true)"));
-            // 最后一个参数未完整 → 不提示闭括号
+            // 最后一个参数未完整 → 不提示闭括号，但末尾附带完整填充结果（使用最佳匹配补全）
             Assert.That(handler.GetCandidates("(1, 0.5, fals"),
-                Is.EquivalentTo(new[] { "(1, 0.5, false" }));
+                Is.EquivalentTo(new[] { "(1, 0.5, false", "(1, 0.5, false)" }));
+            // 输入已包含闭括号 → 用户已表明完结意图，仅返回输入自身
+            Assert.That(handler.GetCandidates("(1, 0.5, true)"),
+                Is.EquivalentTo(new[] { "(1, 0.5, true)" }));
             // 超出处理器数量 → 无候选项
             Assert.That(handler.GetCandidates("(1, 0.5, true,"), Is.Empty);
 
@@ -304,7 +308,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(result2.y, Is.EqualTo(0.0f).Within(1e-6f));
 
             // GetCandidates
-            Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "(" }));
+            Assert.That(handler.GetCandidates(string.Empty),
+                Is.EquivalentTo(new[] { "(", "(0, 0)" }));
             Assert.That(handler.GetCandidates("("), Contains.Item("(0"));
             Assert.That(handler.GetCandidates("("), Contains.Item("(0.0"));
             Assert.That(handler.GetCandidates("(1.5,"), Contains.Item("(1.5, 0"));
@@ -342,7 +347,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(result.z, Is.EqualTo(3.0f).Within(1e-6f));
 
             // GetCandidates
-            Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "(" }));
+            Assert.That(handler.GetCandidates(string.Empty),
+                Is.EquivalentTo(new[] { "(", "(0, 0, 0)" }));
             Assert.That(handler.GetCandidates("("), Contains.Item("(0"));
             Assert.That(handler.GetCandidates("(1.0, 2.0,"),
                 Contains.Item("(1.0, 2.0, 0"));
@@ -380,7 +386,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(result.w, Is.EqualTo(4.0f).Within(1e-6f));
 
             // GetCandidates
-            Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "(" }));
+            Assert.That(handler.GetCandidates(string.Empty),
+                Is.EquivalentTo(new[] { "(", "(0, 0, 0, 0)" }));
             Assert.That(handler.GetCandidates("("), Contains.Item("(0"));
             Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0,"),
                 Contains.Item("(1.0, 2.0, 3.0, 0"));
@@ -417,10 +424,14 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(result.y, Is.EqualTo(2));
 
             // GetCandidates
-            Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "(" }));
+            Assert.That(handler.GetCandidates(string.Empty),
+                Is.EquivalentTo(new[] { "(", "(0, 0)" }));
             Assert.That(handler.GetCandidates("("), Contains.Item("(0"));
             Assert.That(handler.GetCandidates("(1,"), Contains.Item("(1, 0"));
             Assert.That(handler.GetCandidates("(1, 2"), Contains.Item("(1, 2)"));
+            // 输入已包含闭括号 → 用户已表明完结意图，仅返回输入自身
+            Assert.That(handler.GetCandidates("(1, 2)"),
+                Is.EquivalentTo(new[] { "(1, 2)" }));
             Assert.That(handler.GetCandidates("(1, 2,"), Is.Empty);
 
             // GetDescription
@@ -453,7 +464,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(result.z, Is.EqualTo(3));
 
             // GetCandidates
-            Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "(" }));
+            Assert.That(handler.GetCandidates(string.Empty),
+                Is.EquivalentTo(new[] { "(", "(0, 0, 0)" }));
             Assert.That(handler.GetCandidates("("), Contains.Item("(0"));
             Assert.That(handler.GetCandidates("(1, 2,"),
                 Contains.Item("(1, 2, 0"));

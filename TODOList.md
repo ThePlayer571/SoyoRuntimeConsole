@@ -8,8 +8,6 @@
 
 检查CompositeParameterHandler的嵌套测试
 
-多选项的CompositeParameterHandler
-
 ViewModel回溯功能
 
 命令名没有补全

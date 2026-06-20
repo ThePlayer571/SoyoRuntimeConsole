@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text;
 
 namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 {
@@ -157,6 +158,10 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         /// 补全规则：候选项需要包含完整的前缀（开括号 + 已完成子参数 + 逗号），
         /// 因为自动补全会用候选项替换最后一个参数（即当前正在输入的子参数）。
         /// 例如输入 "(" 时返回 "(0"，输入 "(1," 时返回 "(1,0"。
+        ///
+        /// 除当前子参数的局部补全外，始终在列表末尾提供一个"一键填充"完整结果：
+        /// 剩余未填写的子参数均使用默认值，并附带闭括号。例如输入 "(" 或 "(0" 时，
+        /// 在候选项末尾补充 "(0, 0, 0)"（假设三个 int 子参数，默认值均为 "0"）。
         /// </remarks>
         public override IEnumerable<string> GetCandidates(string parameter)
         {
@@ -164,12 +169,19 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
             parameter = parameter.TrimStart();
             var (open, close) = GetBracketChars();
 
-            // 空输入或仅有空白：给出开括号作为提示
+            // 空输入或仅有空白：给出开括号作为提示，以及完整填充结果
             if (string.IsNullOrEmpty(parameter))
             {
                 if (_handlers.Count > 0)
                 {
                     yield return open.ToString();
+
+                    var complete = BuildCompleteResult(open, close,
+                        Array.Empty<string>(), -1, string.Empty);
+                    if (complete != null)
+                    {
+                        yield return complete;
+                    }
                 }
 
                 yield break;
@@ -184,9 +196,10 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
             // 去掉开括号
             var inner = parameter[1..];
 
-            // 如果末尾有闭括号，去掉（可能后面还跟了空格）
+            // 如果末尾有闭括号，去掉（可能后面还跟了空格），同时记录是否存在闭括号
             inner = inner.TrimEnd();
-            if (inner.EndsWith(close.ToString()))
+            var hasCloseBracket = inner.EndsWith(close.ToString());
+            if (hasCloseBracket)
             {
                 inner = inner[..^1];
             }
@@ -222,25 +235,134 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 ? inner[(lastCommaIndex + 1)..].TrimStart()
                 : inner;
 
-            var candidates = _handlers[currentHandlerIndex].GetCandidates(currentPartial);
-            if (candidates == null)
+            // 仅当输入尚未包含闭括号时才提供局部补全候选项
+            if (!hasCloseBracket)
             {
+                var hasYielded = false;
+                var candidates = _handlers[currentHandlerIndex].GetCandidates(currentPartial);
+                if (candidates != null)
+                {
+                    foreach (var candidate in candidates)
+                    {
+                        hasYielded = true;
+                        yield return prefix + candidate;
+                    }
+                }
+
+                // 子处理器无候选项时，回退到用户已输入的原始文本
+                if (!hasYielded)
+                {
+                    var trimmed = currentPartial.Trim();
+                    if (!string.IsNullOrEmpty(trimmed))
+                    {
+                        yield return prefix + trimmed;
+                    }
+                }
+            }
+
+            // 输入已包含闭括号：用户已表明完结意图，仅返回输入自身
+            if (hasCloseBracket)
+            {
+                yield return parameter.Trim();
                 yield break;
             }
 
-            // 最后一个子参数已输入完整时，优先提示闭括号
-            var trimmedPartial = currentPartial.Trim();
-            if (currentHandlerIndex == _handlers.Count - 1
-                && !string.IsNullOrEmpty(trimmedPartial)
-                && _handlers[currentHandlerIndex].IsValid(trimmedPartial))
+            // 提取已完成子参数（当前正在输入的子参数之前的部分）
+            var completedParts = new string[currentHandlerIndex];
+            if (currentHandlerIndex > 0)
             {
-                yield return prefix + trimmedPartial + close;
+                var beforeLastComma = inner[..lastCommaIndex];
+                var parts = beforeLastComma.Split(',');
+                for (var i = 0; i < parts.Length && i < currentHandlerIndex; i++)
+                {
+                    completedParts[i] = parts[i].Trim();
+                }
             }
 
-            foreach (var candidate in candidates)
+            // 始终在末尾提供"一键填充"完整结果
+            var completeResult = BuildCompleteResult(open, close,
+                completedParts, currentHandlerIndex, currentPartial);
+            if (completeResult != null)
             {
-                yield return prefix + candidate;
+                yield return completeResult;
             }
+        }
+
+        /// <summary>
+        /// 构建"一键填充"完整结果：已输入的部分保持原样，剩余未填写的子参数使用默认值填充，
+        /// 末尾附带闭括号。
+        /// </summary>
+        /// <returns>完整的结果字符串；若无法获取某个位置的默认值则返回 null。</returns>
+        private string BuildCompleteResult(char open, char close,
+            string[] completedParts, int currentHandlerIndex, string currentPartial)
+        {
+            var sb = new StringBuilder();
+            sb.Append(open);
+
+            for (var i = 0; i < _handlers.Count; i++)
+            {
+                if (i > 0)
+                {
+                    sb.Append(", ");
+                }
+
+                string value;
+                if (i < currentHandlerIndex)
+                {
+                    // 已完成的子参数，直接使用
+                    value = i < completedParts.Length ? completedParts[i] : string.Empty;
+                }
+                else if (i == currentHandlerIndex)
+                {
+                    // 正在输入的子参数：优先使用子处理器的最佳匹配，无匹配则保留原始输入
+                    value = currentPartial.Trim();
+                    if (string.IsNullOrEmpty(value))
+                    {
+                        value = GetDefaultForHandler(i);
+                        if (value == null)
+                        {
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        var bestMatch = _handlers[i].GetCandidates(value)?.FirstOrDefault();
+                        if (bestMatch != null)
+                        {
+                            value = bestMatch;
+                        }
+                    }
+                }
+                else
+                {
+                    // 尚未开始的子参数，使用默认值
+                    value = GetDefaultForHandler(i);
+                    if (value == null)
+                    {
+                        return null;
+                    }
+                }
+
+                sb.Append(value);
+            }
+
+            sb.Append(close);
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// 获取指定子处理器的默认值（<see cref="IParameterHandler.GetCandidates"/> 对空输入的第一个候选项）。
+        /// </summary>
+        /// <returns>默认值；若无候选项则返回 null。</returns>
+        private string GetDefaultForHandler(int index)
+        {
+            if (index < 0 || index >= _handlers.Count)
+            {
+                return null;
+            }
+
+            var candidates = _handlers[index].GetCandidates(string.Empty);
+            return candidates?.FirstOrDefault();
         }
 
         /// <summary>
