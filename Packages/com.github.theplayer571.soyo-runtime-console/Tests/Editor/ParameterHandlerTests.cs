@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using NUnit.Framework;
 using Soyo.SoyoRuntimeConsole.ParameterHandlers;
 using UnityEngine;
@@ -506,7 +507,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That((float)handler.Parse("1.5 "), Is.EqualTo(1.5f));
 
             // GetCandidates：合并去重
-            var candidates = handler.GetCandidates(string.Empty);
+            var candidates = handler.GetCandidates(string.Empty).ToList();
             Assert.That(candidates, Contains.Item("0"));
             Assert.That(candidates, Contains.Item("0.0"));
 
@@ -615,7 +616,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
                 new BooleanParameterHandler("b"));
 
             // 空输入：合并所有候选项
-            var candidates = handler.GetCandidates(string.Empty);
+            var candidates = handler.GetCandidates(string.Empty).ToList();
             Assert.That(candidates, Contains.Item("0"));       // IntegerHandler
             Assert.That(candidates, Contains.Item("true"));    // BooleanHandler
             Assert.That(candidates, Contains.Item("false"));   // BooleanHandler
@@ -656,6 +657,190 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             // 但 "1" 会被 int 先匹配
             // "1" 对 int 有效，对 float 也有效，但 int 先匹配
             Assert.That(handler.Parse("1"), Is.TypeOf<int>());
+        }
+
+        [Test]
+        public void TupleParameterHandler_NestedTuples_SameBracketType()
+        {
+            // 嵌套元组：外层圆括号包含一个内部圆括号元组 + 一个布尔值
+            // 输入格式：((int, int), bool)
+            var handler = new TestTupleHandler("nested", "Nested", BracketType.Parentheses,
+                new TestTupleHandler("inner", "Inner", BracketType.Parentheses,
+                    new IntegerParameterHandler("x"),
+                    new IntegerParameterHandler("y")),
+                new BooleanParameterHandler("flag"));
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            // IsValid：嵌套括号正确解析
+            Assert.IsTrue(handler.IsValid("((1, 2), true)"));
+            Assert.IsTrue(handler.IsValid("((1, 2), true) "));
+            Assert.IsTrue(handler.IsValid("((10, 20), false)"));
+            // 尾随空格（trim 后合法）
+            Assert.IsTrue(handler.IsValid("((1, 2), true) "));
+            // 数量不匹配：内部元组的逗号不应被外层计数
+            Assert.IsFalse(handler.IsValid("((1, 2))"));          // 缺少 bool
+            Assert.IsFalse(handler.IsValid("((1, 2), true, 0)")); // 多了一个
+            // 内部元组数量不匹配
+            Assert.IsFalse(handler.IsValid("((1, 2, 3), true)")); // 内部 3 个 vs 2 个
+            Assert.IsFalse(handler.IsValid("((1), true)"));       // 内部 1 个 vs 2 个
+            // 子参数不合法
+            Assert.IsFalse(handler.IsValid("((1, abc), true)"));
+            Assert.IsFalse(handler.IsValid("((1, 2), True)")); // 大写 True
+
+            // ShouldAdvance
+            Assert.IsFalse(handler.ShouldAdvance("((1, 2), true)"));
+            Assert.IsTrue(handler.ShouldAdvance("((1, 2), true) "));
+            Assert.IsFalse(handler.ShouldAdvance("((1, 2), true"));
+            Assert.IsTrue(handler.ShouldAdvance("((1, 2), true)  "));
+
+            // Parse：验证嵌套 object[] 结构
+            var result = (object[])handler.Parse("((1, 2), true) ");
+            Assert.That(result.Length, Is.EqualTo(2));
+            // result[0] 是内部元组的解析结果（object[]）
+            Assert.That(result[0], Is.TypeOf<object[]>());
+            var innerResult = (object[])result[0];
+            Assert.That(innerResult.Length, Is.EqualTo(2));
+            Assert.That((int)innerResult[0], Is.EqualTo(1));
+            Assert.That((int)innerResult[1], Is.EqualTo(2));
+            // result[1] 是布尔值
+            Assert.That(result[1], Is.EqualTo(true));
+
+            // GetCandidates：空输入
+            Assert.That(handler.GetCandidates(string.Empty),
+                Is.EquivalentTo(new[] { "(", "((0, 0), true)" }));
+            // 输入 "((" → 委托给内部 TupleHandler 的第一个 int 参数
+            Assert.That(handler.GetCandidates("(("), Contains.Item("((0"));
+            // 输入 "((1, " → 内部元组的第二个参数候选项（前缀为 "((1, "）
+            var candidates = handler.GetCandidates("((1, ").ToList();
+            Assert.That(candidates, Contains.Item("((1, 0"));
+            Assert.That(candidates, Contains.Item("((1, 0)"));
+            // 输入 "((1, 2), " → 第二个子参数（bool）的候选项（前缀为 "((1, 2), "）
+            Assert.That(handler.GetCandidates("((1, 2), "), Contains.Item("((1, 2), true"));
+            Assert.That(handler.GetCandidates("((1, 2), "), Contains.Item("((1, 2), false"));
+            // 输入 "((1, 2), t" → 布尔值的部分补全
+            Assert.That(handler.GetCandidates("((1, 2), t"), Contains.Item("((1, 2), true"));
+            // 输入内层元组已闭合但外层未闭合（内层 ) 不应被误判为外层闭括号）
+            // → 应同时返回输入本身和完整填充结果
+            Assert.That(handler.GetCandidates("((1, 2)"),
+                Contains.Item("((1, 2), true)"));
+            Assert.That(handler.GetCandidates("((1, 2)"),
+                Contains.Item("((1, 2)"));
+            // 输入已包含闭括号 → 仅返回输入自身
+            Assert.That(handler.GetCandidates("((1, 2), true)"),
+                Is.EquivalentTo(new[] { "((1, 2), true)" }));
+            // 超出处理器数量 → 无候选项
+            Assert.That(handler.GetCandidates("((1, 2), true,"), Is.Empty);
+
+            // GetDescription
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("nested"));
+            Assert.That(handler.GetDescription().Type, Is.EqualTo("Nested"));
+        }
+
+        [Test]
+        public void TupleParameterHandler_NestedTuples_MixedBracketTypes()
+        {
+            // 嵌套元组：外层方括号包含圆括号元组 + 花括号元组
+            // 输入格式：[(int, int), {bool}]
+            var handler = new TestTupleHandler("mixed", "Mixed", BracketType.Brackets,
+                new TestTupleHandler("inner1", "Inner1", BracketType.Parentheses,
+                    new IntegerParameterHandler("x"),
+                    new IntegerParameterHandler("y")),
+                new TestTupleHandler("inner2", "Inner2", BracketType.Braces,
+                    new BooleanParameterHandler("flag")));
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            // IsValid：混合括号类型嵌套
+            Assert.IsTrue(handler.IsValid("[(1, 2), {true}]"));
+            Assert.IsTrue(handler.IsValid("[(1, 2), {true}] "));
+            Assert.IsTrue(handler.IsValid("[(10, 20), {false}]"));
+            // 数量不匹配
+            Assert.IsFalse(handler.IsValid("[(1, 2)]"));
+            Assert.IsFalse(handler.IsValid("[(1, 2), {true}, 0]"));
+            // 子参数不合法
+            Assert.IsFalse(handler.IsValid("[(1, 2), {True}]"));
+
+            // ShouldAdvance
+            Assert.IsFalse(handler.ShouldAdvance("[(1, 2), {true}]"));
+            Assert.IsTrue(handler.ShouldAdvance("[(1, 2), {true}] "));
+
+            // Parse：验证嵌套 object[] 结构
+            var result = (object[])handler.Parse("[(1, 2), {true}] ");
+            Assert.That(result.Length, Is.EqualTo(2));
+            var inner1 = (object[])result[0];
+            Assert.That((int)inner1[0], Is.EqualTo(1));
+            Assert.That((int)inner1[1], Is.EqualTo(2));
+            var inner2 = (object[])result[1];
+            Assert.That((bool)inner2[0], Is.EqualTo(true));
+
+            // GetCandidates：方括号前缀
+            Assert.That(handler.GetCandidates(string.Empty),
+                Is.EquivalentTo(new[] { "[", "[(0, 0), {true}]" }));
+            // 输入 "[" → 第一个内部元组候选项
+            Assert.That(handler.GetCandidates("["), Contains.Item("[(0"));
+            // 输入 "[(1, 2), " → 第二个内部元组候选项（花括号前缀）
+            Assert.That(handler.GetCandidates("[(1, 2), "), Contains.Item("[(1, 2), {true"));
+            Assert.That(handler.GetCandidates("[(1, 2), "), Contains.Item("[(1, 2), {false"));
+
+            // GetDescription
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("mixed"));
+            Assert.That(handler.GetDescription().Type, Is.EqualTo("Mixed"));
+        }
+
+        [Test]
+        public void TupleParameterHandler_DeeplyNested()
+        {
+            // 三层子参数：两个内部元组 + 一个布尔值
+            // 输入格式：((int, int), (float, float), bool)
+            var handler = new TestTupleHandler("deep", "Deep", BracketType.Parentheses,
+                new TestTupleHandler("a", "A", BracketType.Parentheses,
+                    new IntegerParameterHandler("x"),
+                    new IntegerParameterHandler("y")),
+                new TestTupleHandler("b", "B", BracketType.Parentheses,
+                    new FloatParameterHandler("u"),
+                    new FloatParameterHandler("v")),
+                new BooleanParameterHandler("flag"));
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            // IsValid：三个子参数，其中两个是元组
+            Assert.IsTrue(handler.IsValid("((1, 2), (3.0, 4.0), true)"));
+            Assert.IsTrue(handler.IsValid("((1, 2), (3.0, 4.0), true) "));
+            // 数量不匹配
+            Assert.IsFalse(handler.IsValid("((1, 2), (3.0, 4.0))"));
+            Assert.IsFalse(handler.IsValid("((1, 2), (3.0, 4.0), true, 0)"));
+
+            // ShouldAdvance
+            Assert.IsTrue(handler.ShouldAdvance("((1, 2), (3.0, 4.0), true) "));
+            Assert.IsFalse(handler.ShouldAdvance("((1, 2), (3.0, 4.0), true)"));
+
+            // Parse：验证三层嵌套
+            var result = (object[])handler.Parse("((1, 2), (3.0, 4.0), true) ");
+            Assert.That(result.Length, Is.EqualTo(3));
+            var inner1 = (object[])result[0];
+            Assert.That((int)inner1[0], Is.EqualTo(1));
+            Assert.That((int)inner1[1], Is.EqualTo(2));
+            var inner2 = (object[])result[1];
+            Assert.That((float)inner2[0], Is.EqualTo(3.0f).Within(1e-6f));
+            Assert.That((float)inner2[1], Is.EqualTo(4.0f).Within(1e-6f));
+            Assert.That(result[2], Is.EqualTo(true));
+
+            // GetCandidates：输入 "((1, 2), " → 第二个元组的候选项（前缀为 "((1, 2), "）
+            Assert.That(handler.GetCandidates("((1, 2), "), Contains.Item("((1, 2), ("));
+            // 输入 "((1, 2), (3.0, " → 第二个元组的第二个参数候选项
+            Assert.That(handler.GetCandidates("((1, 2), (3.0, "), Contains.Item("((1, 2), (3.0, 0"));
+            Assert.That(handler.GetCandidates("((1, 2), (3.0, "), Contains.Item("((1, 2), (3.0, 0.0"));
+            // 输入 "((1, 2), (3.0, 4.0), " → 第三个参数（bool）候选项
+            Assert.That(handler.GetCandidates("((1, 2), (3.0, 4.0), "), Contains.Item("((1, 2), (3.0, 4.0), true"));
+            Assert.That(handler.GetCandidates("((1, 2), (3.0, 4.0), "), Contains.Item("((1, 2), (3.0, 4.0), false"));
+            // 输入已包含闭括号 → 仅返回输入自身
+            Assert.That(handler.GetCandidates("((1, 2), (3.0, 4.0), true)"),
+                Is.EquivalentTo(new[] { "((1, 2), (3.0, 4.0), true)" }));
+
+            // GetDescription
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("deep"));
+            Assert.That(handler.GetDescription().Type, Is.EqualTo("Deep"));
         }
     }
 }

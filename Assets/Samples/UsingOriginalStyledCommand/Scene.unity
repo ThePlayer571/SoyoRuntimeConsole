@@ -581,13 +581,9 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "CompletionState: TypingCommandName\r\nCandidateCommands: \r\n - \u27170
-    amazing_hello - \r\n - \u27170 hello <vector3: Vector3> - \r\n - \u27170 hello
-    <bold: > - \r\n - \u27170 hello - \r\n - \u27170 hello <content: String> <tone:
-    HelloTone> - \r\n - \u27170 hello <cute: Boolean> - \r\n - \u27170 hello <content:
-    Float> - \r\n - \u27170 hello <content: String> <config: GreetConfig> - \r\n
-    - \u27170 hello <content: Integer> - \r\n - \u27170 hello_vec3 <vec3: Vec3> -
-    \r\nCandidateParameters: none\r\n"
+  m_Text: "CompletionState: TypingParameters\r\nCandidateCommands: \r\n - \u27171
+    hello_nested <nested_greet: NestedGreet> - \r\nCandidateParameters: ((Normal,
+    true, ((Normal, false, ((Normal, true), ((Normal, true, 0)\r\n"
 --- !u!222 &838812662
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -819,7 +815,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e4fbd1ace3246c69d87392aa37257bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  input: 
+  input: hello_nested ((Normal,
   suggestionText: {fileID: 838812661}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

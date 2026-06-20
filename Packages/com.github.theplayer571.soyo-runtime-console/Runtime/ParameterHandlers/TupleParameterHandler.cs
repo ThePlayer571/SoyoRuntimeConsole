@@ -126,8 +126,8 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 return string.IsNullOrWhiteSpace(inner);
             }
 
-            // 按逗号分割
-            var parts = inner.Split(',');
+            // 按顶层逗号分割（仅在括号深度为 0 的逗号处分割，支持嵌套元组）
+            var parts = SplitByTopLevelComma(inner);
             if (parts.Length != _handlers.Count)
             {
                 return false;
@@ -196,20 +196,38 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
             // 去掉开括号
             var inner = parameter[1..];
 
-            // 如果末尾有闭括号，去掉（可能后面还跟了空格），同时记录是否存在闭括号
+            // 如果末尾有闭括号，去掉（可能后面还跟了空格），同时记录是否存在闭括号。
+            // 需验证移除该闭括号后剩余内容的括号是否平衡：
+            // 若不平衡，说明该闭括号属于内层嵌套元组而非外层闭括号。
             inner = inner.TrimEnd();
-            var hasCloseBracket = inner.EndsWith(close.ToString());
-            if (hasCloseBracket)
+            var hasCloseBracket = false;
+            if (inner.EndsWith(close.ToString()))
             {
-                inner = inner[..^1];
+                var withoutClose = inner[..^1];
+                if (IsBracketBalanced(withoutClose))
+                {
+                    hasCloseBracket = true;
+                    inner = withoutClose;
+                }
             }
 
-            // 计算逗号数量，确定当前正在输入第几个子参数
+            // 计算顶层逗号数量（仅在括号深度为 0 的逗号处计数，支持嵌套元组），
+            // 确定当前正在输入第几个子参数
             var commaCount = 0;
             var lastCommaIndex = -1;
+            var bracketDepth = 0;
             for (var i = 0; i < inner.Length; i++)
             {
-                if (inner[i] == ',')
+                var c = inner[i];
+                if (c == '(' || c == '{' || c == '[')
+                {
+                    bracketDepth++;
+                }
+                else if (c == ')' || c == '}' || c == ']')
+                {
+                    bracketDepth--;
+                }
+                else if (c == ',' && bracketDepth == 0)
                 {
                     commaCount++;
                     lastCommaIndex = i;
@@ -242,10 +260,35 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 var candidates = _handlers[currentHandlerIndex].GetCandidates(currentPartial);
                 if (candidates != null)
                 {
+                    var isCurrentPartialEmpty = string.IsNullOrEmpty(currentPartial);
                     foreach (var candidate in candidates)
                     {
-                        hasYielded = true;
-                        yield return prefix + candidate;
+                        // 当前子参数输入为空且候选项是纯括号提示（如 "("、"{"、"["）时，
+                        // 同时保留括号提示并展开以获取内层值候选项。
+                        // 例如用户输入 "[" 时，"[(" 提示内层括号类型，"[(0" 提供直接可选值。
+                        if (isCurrentPartialEmpty && IsSingleBracket(candidate))
+                        {
+                            // 保留括号提示本身
+                            hasYielded = true;
+                            yield return prefix + candidate;
+
+                            // 展开括号提示，获取内层处理器的首层值候选项
+                            var deeperCandidates =
+                                _handlers[currentHandlerIndex].GetCandidates(candidate);
+                            if (deeperCandidates != null)
+                            {
+                                foreach (var dc in deeperCandidates)
+                                {
+                                    hasYielded = true;
+                                    yield return prefix + dc;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            hasYielded = true;
+                            yield return prefix + candidate;
+                        }
                     }
                 }
 
@@ -272,7 +315,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
             if (currentHandlerIndex > 0)
             {
                 var beforeLastComma = inner[..lastCommaIndex];
-                var parts = beforeLastComma.Split(',');
+                var parts = SplitByTopLevelComma(beforeLastComma);
                 for (var i = 0; i < parts.Length && i < currentHandlerIndex; i++)
                 {
                     completedParts[i] = parts[i].Trim();
@@ -351,9 +394,12 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         }
 
         /// <summary>
-        /// 获取指定子处理器的默认值（<see cref="IParameterHandler.GetCandidates"/> 对空输入的第一个候选项）。
+        /// 获取指定子处理器的默认值。
+        /// 跳过仅包含单个括号字符的候选项（如 "("、"{"、"["），
+        /// 因为这些是 UI 提示而非有效的完整默认值。
+        /// 对于嵌套元组子处理器，需要返回完整的填充结果（如 "(0, 0)"）而非括号提示。
         /// </summary>
-        /// <returns>默认值；若无候选项则返回 null。</returns>
+        /// <returns>默认值；若无有效候选项则返回 null。</returns>
         private string GetDefaultForHandler(int index)
         {
             if (index < 0 || index >= _handlers.Count)
@@ -362,7 +408,34 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
             }
 
             var candidates = _handlers[index].GetCandidates(string.Empty);
-            return candidates?.FirstOrDefault();
+            return candidates?.FirstOrDefault(c => !IsSingleBracket(c));
+        }
+
+        /// <summary>
+        /// 判断字符串是否仅包含一个括号字符。
+        /// </summary>
+        private static bool IsSingleBracket(string s)
+        {
+            if (string.IsNullOrEmpty(s) || s.Length != 1) return false;
+            var c = s[0];
+            return c == '(' || c == ')' || c == '{' || c == '}' || c == '[' || c == ']';
+        }
+
+        /// <summary>
+        /// 判断字符串中所有括号是否平衡（每种括号的开闭数量相等，总深度为 0）。
+        /// 用于区分内层元组的闭括号和外层元组的闭括号。
+        /// </summary>
+        private static bool IsBracketBalanced(string s)
+        {
+            var depth = 0;
+            for (var i = 0; i < s.Length; i++)
+            {
+                var c = s[i];
+                if (c == '(' || c == '{' || c == '[') depth++;
+                else if (c == ')' || c == '}' || c == ']') depth--;
+            }
+
+            return depth == 0;
         }
 
         /// <summary>
@@ -382,7 +455,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 return Array.Empty<object>();
             }
 
-            var parts = inner.Split(',');
+            var parts = SplitByTopLevelComma(inner);
             var results = new object[parts.Length];
             for (var i = 0; i < parts.Length; i++)
             {
@@ -401,6 +474,40 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 BracketType.Brackets => ('[', ']'),
                 _ => throw new ArgumentOutOfRangeException(nameof(_bracketType), _bracketType, null)
             };
+        }
+
+        /// <summary>
+        /// 按逗号分割字符串，但仅在括号深度为 0（顶层）的逗号处分割。
+        /// 支持圆括号 ()、花括号 {}、方括号 [] 三种括号的嵌套深度追踪。
+        /// </summary>
+        /// <param name="input">待分割的字符串</param>
+        /// <returns>按顶层逗号分割后的子字符串数组</returns>
+        private static string[] SplitByTopLevelComma(string input)
+        {
+            var parts = new System.Collections.Generic.List<string>();
+            var depth = 0;
+            var start = 0;
+
+            for (var i = 0; i < input.Length; i++)
+            {
+                var c = input[i];
+                if (c == '(' || c == '{' || c == '[')
+                {
+                    depth++;
+                }
+                else if (c == ')' || c == '}' || c == ']')
+                {
+                    depth--;
+                }
+                else if (c == ',' && depth == 0)
+                {
+                    parts.Add(input[start..i]);
+                    start = i + 1;
+                }
+            }
+
+            parts.Add(input[start..]);
+            return parts.ToArray();
         }
     }
 }
