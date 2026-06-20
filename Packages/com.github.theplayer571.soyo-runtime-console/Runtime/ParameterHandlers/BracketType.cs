@@ -1,7 +1,7 @@
 namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 {
     /// <summary>
-    /// 括号类型，用于 CompositeParameterHandler 指定参数包裹的括号样式。
+    /// 括号类型，用于 TupleParameterHandler 指定参数包裹的括号样式。
     /// </summary>
     public enum BracketType
     {

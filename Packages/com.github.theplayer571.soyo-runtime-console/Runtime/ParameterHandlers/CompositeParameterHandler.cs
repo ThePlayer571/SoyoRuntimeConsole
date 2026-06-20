@@ -6,64 +6,115 @@ using System.Linq;
 namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 {
     /// <summary>
-    /// 复合参数处理器。组合多个 IParameterHandler 来解析形如 (1, 2.5, true) 或 {1.1, "hahaha"} 的括号包裹、
-    /// 逗号分隔的参数输入。
+    /// 复合参数处理器。组合多个 IParameterHandler 作为备选格式，依次尝试直到找到匹配的处理器。
+    /// 用于支持"一个参数位置接受多种格式"的场景。
     /// </summary>
     /// <remarks>
-    /// 本类为抽象类，子类需实现 <see cref="Parse"/> 方法来将子参数组合为目标类型（如 Vector3、Color 等）。
+    /// 与 <see cref="TupleParameterHandler"/>（乘积类型：所有子参数必须全部匹配）不同，
+    /// 本类实现的是"选择"语义（sum type）：只要任意一个子处理器匹配即可。
+    ///
+    /// 示例：一个参数既可以是单个整数，也可以是括号包裹的元组——
+    /// <code>
+    /// new CompositeParameterHandler("vec", "Vector3Int",
+    ///     new IntegerParameterHandler("x"),
+    ///     new Vector3IntParameterHandler())
+    /// </code>
+    /// 此时输入 "1" 会匹配 IntegerParameterHandler（解析为 int），
+    /// 输入 "(1, 2, 3)" 会匹配 Vector3IntParameterHandler（解析为 Vector3Int）。
     /// </remarks>
-    public abstract class CompositeParameterHandler : ParameterHandlerBase
+    public class CompositeParameterHandler : ParameterHandlerBase
     {
-        private readonly BracketType _bracketType;
         private readonly IReadOnlyList<IParameterHandler> _handlers;
 
         /// <summary>
-        /// 使用指定的名称、类型、括号类型和子处理器集合构造复合参数处理器。
+        /// 使用指定的名称、类型和子处理器集合构造复合参数处理器。
+        /// 自动过滤未初始化的子处理器。
         /// </summary>
         /// <param name="name">参数名称（用于提示）</param>
-        /// <param name="type">参数类型名（用于提示，如 "Vector3"）</param>
-        /// <param name="bracketType">括号类型</param>
-        /// <param name="handlers">子参数处理器集合（允许为空，表示空括号语法如 {}）</param>
-        protected CompositeParameterHandler(
+        /// <param name="type">参数类型名（用于提示）</param>
+        /// <param name="handlers">备选参数处理器集合。依次尝试，第一个匹配的生效。</param>
+        public CompositeParameterHandler(
             [AllowNull] string name,
             [AllowNull] string type,
-            BracketType bracketType,
             [DisallowNull] IEnumerable<IParameterHandler> handlers)
             : base(name, type)
         {
-            _bracketType = bracketType;
-            _handlers = handlers?.ToArray() ?? Array.Empty<IParameterHandler>();
+            _handlers = handlers?
+                .Where(h => h is { IsInitialized: true })
+                .ToArray() ?? Array.Empty<IParameterHandler>();
         }
 
         /// <summary>
-        /// 使用指定的名称、类型、括号类型和子处理器构造复合参数处理器（params 便捷重载）。
+        /// 使用指定的名称、类型和子处理器构造复合参数处理器（params 便捷重载）。
         /// </summary>
-        protected CompositeParameterHandler(
+        public CompositeParameterHandler(
             [AllowNull] string name,
             [AllowNull] string type,
-            BracketType bracketType,
             [DisallowNull] params IParameterHandler[] handlers)
-            : this(name, type, bracketType, (IEnumerable<IParameterHandler>)handlers)
+            : this(name, type, (IEnumerable<IParameterHandler>)handlers)
         {
         }
 
         /// <summary>
-        /// 子参数处理器列表（只读）。
+        /// 备选子处理器列表（只读）。已过滤未初始化的处理器。
         /// </summary>
-        protected IReadOnlyList<IParameterHandler> Handlers => _handlers;
+        public IReadOnlyList<IParameterHandler> Handlers => _handlers;
 
         /// <summary>
-        /// 当前使用的括号类型。
+        /// 判断该实例是否成功初始化。当至少有一个子处理器已初始化时返回 true。
         /// </summary>
-        protected BracketType BracketType => _bracketType;
-
-        /// <summary>
-        /// 判断该实例是否成功初始化。当所有子处理器均已初始化时返回 true。
-        /// 注意：空子处理器集合视为已初始化（支持 {} 空括号语法）。
-        /// </summary>
-        public override bool IsInitialized => _handlers.All(h => h.IsInitialized);
+        public override bool IsInitialized => _handlers.Count > 0;
 
         /// <inheritdoc />
+        /// <remarks>
+        /// 依次遍历子处理器，返回第一个 <see cref="IParameterHandler.IsValid"/> 为 true 的结果。
+        /// 若所有子处理器均不匹配，返回 false。
+        /// </remarks>
+        public override bool IsValid(string parameter)
+        {
+            if (string.IsNullOrEmpty(parameter))
+            {
+                return false;
+            }
+
+            for (var i = 0; i < _handlers.Count; i++)
+            {
+                if (_handlers[i].IsValid(parameter))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// 委托给第一个 <see cref="IParameterHandler.IsValid"/> 为 true 的子处理器执行解析。
+        /// 调用前应先通过 <see cref="IsValid"/> 确认存在匹配的处理器。
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">当没有子处理器匹配该参数时抛出。</exception>
+        public override object Parse(string parameter)
+        {
+            for (var i = 0; i < _handlers.Count; i++)
+            {
+                if (_handlers[i].IsValid(parameter))
+                {
+                    return _handlers[i].Parse(parameter);
+                }
+            }
+
+            throw new InvalidOperationException(
+                $"No handler in CompositeParameterHandler matches parameter: '{parameter}'");
+        }
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// 仅当存在某个子处理器同时满足 <see cref="IParameterHandler.IsValid"/> 和
+        /// <see cref="IParameterHandler.ShouldAdvance"/> 时才返回 true。
+        /// 这确保了不会在用户正输入元组（如 "(1, "）时因简单处理器（如 IntegerHandler）
+        /// 检测到尾部空格而提前 advance。
+        /// </remarks>
         public override bool ShouldAdvance(string parameter)
         {
             if (string.IsNullOrEmpty(parameter))
@@ -71,213 +122,45 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 return false;
             }
 
-            parameter = parameter.TrimStart();
-            if (string.IsNullOrEmpty(parameter))
+            for (var i = 0; i < _handlers.Count; i++)
             {
-                return false;
-            }
-
-            var (open, close) = GetBracketChars();
-
-            // 必须以开括号开头
-            if (parameter[0] != open)
-            {
-                return false;
-            }
-
-            // 必须以空格结尾（与其他 handler 一致的 advance 约定）
-            if (!parameter.EndsWith(' '))
-            {
-                return false;
-            }
-
-            // 空格之前的字符必须是闭括号
-            var withoutTrailingSpaces = parameter.TrimEnd();
-            return withoutTrailingSpaces.Length >= 2 && withoutTrailingSpaces[^1] == close;
-        }
-
-        /// <inheritdoc />
-        public override bool IsValid(string parameter)
-        {
-            parameter = parameter.Trim();
-
-            var (open, close) = GetBracketChars();
-
-            // 长度至少为 2（开括号 + 闭括号）
-            if (parameter.Length < 2)
-            {
-                return false;
-            }
-
-            // 必须以开括号开头，闭括号结尾
-            if (parameter[0] != open || parameter[^1] != close)
-            {
-                return false;
-            }
-
-            // 提取括号内部内容
-            var inner = parameter[1..^1];
-
-            // 无子处理器：内部必须为空或纯空白
-            if (_handlers.Count == 0)
-            {
-                return string.IsNullOrWhiteSpace(inner);
-            }
-
-            // 按逗号分割
-            var parts = inner.Split(',');
-            if (parts.Length != _handlers.Count)
-            {
-                return false;
-            }
-
-            // 每个部分去除首尾空白后分别校验
-            for (var i = 0; i < parts.Length; i++)
-            {
-                var part = parts[i].Trim();
-                if (!_handlers[i].IsValid(part))
+                if (_handlers[i].IsValid(parameter) && _handlers[i].ShouldAdvance(parameter))
                 {
-                    return false;
+                    return true;
                 }
             }
 
-            return true;
+            return false;
         }
 
         /// <inheritdoc />
         /// <remarks>
-        /// 抽象方法，子类必须实现此方法来将子参数组合为目标类型。
-        /// 子类可调用 <see cref="GetParsedSubParameters"/> 获取子处理器的解析结果。
-        /// </remarks>
-        public abstract override object Parse(string parameter);
-
-        /// <inheritdoc />
-        /// <remarks>
-        /// 补全规则：候选项需要包含完整的前缀（开括号 + 已完成子参数 + 逗号），
-        /// 因为自动补全会用候选项替换最后一个参数（即当前正在输入的子参数）。
-        /// 例如输入 "(" 时返回 "(0"，输入 "(1," 时返回 "(1,0"。
+        /// 合并所有子处理器的候选项，使用 HashSet 去重。
         /// </remarks>
         public override IEnumerable<string> GetCandidates(string parameter)
         {
-            // 去除前导空格
-            parameter = parameter.TrimStart();
-            var (open, close) = GetBracketChars();
-
-            // 空输入或仅有空白：给出开括号作为提示
             if (string.IsNullOrEmpty(parameter))
             {
-                if (_handlers.Count > 0)
+                parameter = string.Empty;
+            }
+
+            var seen = new HashSet<string>();
+            for (var i = 0; i < _handlers.Count; i++)
+            {
+                var candidates = _handlers[i].GetCandidates(parameter);
+                if (candidates == null)
                 {
-                    yield return open.ToString();
+                    continue;
                 }
 
-                yield break;
-            }
-
-            // 必须以开括号开头
-            if (parameter[0] != open)
-            {
-                yield break;
-            }
-
-            // 去掉开括号
-            var inner = parameter[1..];
-
-            // 如果末尾有闭括号，去掉（可能后面还跟了空格）
-            inner = inner.TrimEnd();
-            if (inner.EndsWith(close.ToString()))
-            {
-                inner = inner[..^1];
-            }
-
-            // 计算逗号数量，确定当前正在输入第几个子参数
-            var commaCount = 0;
-            var lastCommaIndex = -1;
-            for (var i = 0; i < inner.Length; i++)
-            {
-                if (inner[i] == ',')
+                foreach (var candidate in candidates)
                 {
-                    commaCount++;
-                    lastCommaIndex = i;
+                    if (seen.Add(candidate))
+                    {
+                        yield return candidate;
+                    }
                 }
             }
-
-            var currentHandlerIndex = commaCount;
-            if (currentHandlerIndex >= _handlers.Count)
-            {
-                yield break;
-            }
-
-            // 前缀：开括号 + 已完成参数（含逗号），规范化逗号后带一个空格
-            var prefix = open.ToString();
-            if (lastCommaIndex >= 0)
-            {
-                prefix += inner[..(lastCommaIndex + 1)]; // 包含最后一个逗号
-                prefix = prefix.TrimEnd() + ' '; // 规范化：确保逗号后恰好一个空格
-            }
-
-            // 提取最后一个逗号之后的当前部分输入（去除前导空格）
-            var currentPartial = lastCommaIndex >= 0
-                ? inner[(lastCommaIndex + 1)..].TrimStart()
-                : inner;
-
-            var candidates = _handlers[currentHandlerIndex].GetCandidates(currentPartial);
-            if (candidates == null)
-            {
-                yield break;
-            }
-
-            // 最后一个子参数已输入完整时，优先提示闭括号
-            var trimmedPartial = currentPartial.Trim();
-            if (currentHandlerIndex == _handlers.Count - 1
-                && !string.IsNullOrEmpty(trimmedPartial)
-                && _handlers[currentHandlerIndex].IsValid(trimmedPartial))
-            {
-                yield return prefix + trimmedPartial + close;
-            }
-
-            foreach (var candidate in candidates)
-            {
-                yield return prefix + candidate;
-            }
-        }
-
-        /// <summary>
-        /// 获取子参数的解析结果。将括号内部按逗号分割、去除空白后，
-        /// 依次调用每个子处理器的 <see cref="IParameterHandler.Parse"/> 方法。
-        /// </summary>
-        /// <param name="parameter">已通过 <see cref="IsValid"/> 验证的参数字符串</param>
-        /// <returns>各子处理器的解析结果数组</returns>
-        protected object[] GetParsedSubParameters([DisallowNull] string parameter)
-        {
-            var normalized = parameter.Trim();
-            var (open, close) = GetBracketChars();
-            var inner = normalized[1..^1];
-
-            if (_handlers.Count == 0)
-            {
-                return Array.Empty<object>();
-            }
-
-            var parts = inner.Split(',');
-            var results = new object[parts.Length];
-            for (var i = 0; i < parts.Length; i++)
-            {
-                results[i] = _handlers[i].Parse(parts[i].Trim());
-            }
-
-            return results;
-        }
-
-        private (char open, char close) GetBracketChars()
-        {
-            return _bracketType switch
-            {
-                BracketType.Parentheses => ('(', ')'),
-                BracketType.Braces => ('{', '}'),
-                BracketType.Brackets => ('[', ']'),
-                _ => throw new ArgumentOutOfRangeException(nameof(_bracketType), _bracketType, null)
-            };
         }
     }
 }

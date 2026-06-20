@@ -15,12 +15,12 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         }
 
         /// <summary>
-        /// 用于测试 CompositeParameterHandler 的最小具体实现。
+        /// 用于测试 TupleParameterHandler 的最小具体实现。
         /// Parse 直接返回 GetParsedSubParameters 的结果（object[]）。
         /// </summary>
-        private class TestCompositeHandler : CompositeParameterHandler
+        private class TestTupleHandler : TupleParameterHandler
         {
-            public TestCompositeHandler(string name, string type, BracketType bracketType,
+            public TestTupleHandler(string name, string type, BracketType bracketType,
                 params IParameterHandler[] handlers)
                 : base(name, type, bracketType, handlers)
             {
@@ -145,10 +145,10 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         }
 
         [Test]
-        public void CompositeParameterHandler()
+        public void TupleParameterHandler()
         {
             // 构造：Integer + Float + Boolean 子处理器，使用圆括号
-            var handler = new TestCompositeHandler("vector", "Vector3", BracketType.Parentheses,
+            var handler = new TestTupleHandler("vector", "Vector3", BracketType.Parentheses,
                 new IntegerParameterHandler("x"),
                 new FloatParameterHandler("y"),
                 new BooleanParameterHandler("flag"));
@@ -220,10 +220,10 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         }
 
         [Test]
-        public void CompositeParameterHandler_EmptyHandlers()
+        public void TupleParameterHandler_EmptyHandlers()
         {
             // 空子处理器集合（支持 {} 空括号语法）
-            var handler = new TestCompositeHandler("empty", "Empty", BracketType.Braces);
+            var handler = new TestTupleHandler("empty", "Empty", BracketType.Braces);
 
             Assert.IsTrue(handler.IsInitialized);
 
@@ -245,10 +245,10 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         }
 
         [Test]
-        public void CompositeParameterHandler_BracketTypes()
+        public void TupleParameterHandler_BracketTypes()
         {
             // 花括号 {}
-            var braceHandler = new TestCompositeHandler("a", "T", BracketType.Braces,
+            var braceHandler = new TestTupleHandler("a", "T", BracketType.Braces,
                 new IntegerParameterHandler("x"));
             Assert.IsTrue(braceHandler.IsInitialized);
             Assert.IsTrue(braceHandler.IsValid("{42}"));
@@ -262,7 +262,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(braceHandler.GetCandidates("{"), Contains.Item("{0"));
 
             // 方括号 []
-            var bracketHandler = new TestCompositeHandler("b", "T", BracketType.Brackets,
+            var bracketHandler = new TestTupleHandler("b", "T", BracketType.Brackets,
                 new IntegerParameterHandler("x"));
             Assert.IsTrue(bracketHandler.IsInitialized);
             Assert.IsTrue(bracketHandler.IsValid("[42]"));
@@ -463,6 +463,187 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             // GetDescription
             Assert.That(handler.GetDescription().Name, Is.EqualTo("vector3int"));
             Assert.That(handler.GetDescription().Type, Is.EqualTo("Vector3Int"));
+        }
+
+        [Test]
+        public void CompositeParameterHandler_MultipleSimple()
+        {
+            // 组合 Integer 和 Float：同一个参数位置既可以输入整数也可以输入浮点数
+            var handler = new CompositeParameterHandler("number", "Number",
+                new IntegerParameterHandler("int"),
+                new FloatParameterHandler("float"));
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            // IsValid
+            Assert.IsTrue(handler.IsValid("12"));
+            Assert.IsTrue(handler.IsValid("12 "));
+            Assert.IsTrue(handler.IsValid("1.5"));
+            Assert.IsTrue(handler.IsValid("1.5 "));
+            Assert.IsFalse(handler.IsValid("abc"));
+
+            // ShouldAdvance
+            Assert.IsFalse(handler.ShouldAdvance("12"));
+            Assert.IsTrue(handler.ShouldAdvance("12 "));
+            Assert.IsFalse(handler.ShouldAdvance("1.5"));
+            Assert.IsTrue(handler.ShouldAdvance("1.5 "));
+            Assert.IsFalse(handler.ShouldAdvance("abc ")); // 无效输入不 advance
+
+            // Parse：整数走 IntegerHandler，浮点数走 FloatHandler
+            Assert.That((int)handler.Parse("12 "), Is.EqualTo(12));
+            Assert.That((float)handler.Parse("1.5 "), Is.EqualTo(1.5f));
+
+            // GetCandidates：合并去重
+            var candidates = handler.GetCandidates(string.Empty);
+            Assert.That(candidates, Contains.Item("0"));
+            Assert.That(candidates, Contains.Item("0.0"));
+
+            // GetDescription
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("number"));
+            Assert.That(handler.GetDescription().Type, Is.EqualTo("Number"));
+        }
+
+        [Test]
+        public void CompositeParameterHandler_MixedTupleAndSimple()
+        {
+            // 组合 Integer、Tuple(int,int)、Tuple(int,int,int)：模拟 Vec3Int 的多种输入格式
+            var handler = new CompositeParameterHandler("vec", "Vector3Int",
+                new IntegerParameterHandler("x"),
+                new TestTupleHandler("vec2", "Vector2Int", BracketType.Parentheses,
+                    new IntegerParameterHandler("x"),
+                    new IntegerParameterHandler("y")),
+                new Vector3IntParameterHandler());
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            // IsValid：三种格式各自匹配
+            Assert.IsTrue(handler.IsValid("5"));           // 简单 int
+            Assert.IsTrue(handler.IsValid("5 "));
+            Assert.IsTrue(handler.IsValid("(1, 2)"));      // 二元组
+            Assert.IsTrue(handler.IsValid("(1, 2) "));
+            Assert.IsTrue(handler.IsValid("(1, 2, 3)"));   // 三元组
+            Assert.IsTrue(handler.IsValid("(1, 2, 3) "));
+            Assert.IsFalse(handler.IsValid("(1, 2, 3, 4)")); // 四元组不匹配
+            Assert.IsFalse(handler.IsValid("abc"));
+
+            // ShouldAdvance
+            Assert.IsTrue(handler.ShouldAdvance("5 "));
+            Assert.IsFalse(handler.ShouldAdvance("5"));
+            Assert.IsTrue(handler.ShouldAdvance("(1, 2) "));
+            Assert.IsFalse(handler.ShouldAdvance("(1, "));   // 正在输入元组，不 advance
+            Assert.IsTrue(handler.ShouldAdvance("(1, 2, 3) "));
+            Assert.IsFalse(handler.ShouldAdvance("(1, 2, 3)"));
+
+            // Parse：各自委托到正确的子处理器
+            Assert.That((int)handler.Parse("5 "), Is.EqualTo(5));
+            var tupleResult = (object[])handler.Parse("(1, 2) ");
+            Assert.That(tupleResult.Length, Is.EqualTo(2));
+            Assert.That((int)tupleResult[0], Is.EqualTo(1));
+            Assert.That((int)tupleResult[1], Is.EqualTo(2));
+            var vec3Result = (Vector3Int)handler.Parse("(1, 2, 3) ");
+            Assert.That(vec3Result.x, Is.EqualTo(1));
+            Assert.That(vec3Result.y, Is.EqualTo(2));
+            Assert.That(vec3Result.z, Is.EqualTo(3));
+
+            // GetDescription
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("vec"));
+            Assert.That(handler.GetDescription().Type, Is.EqualTo("Vector3Int"));
+        }
+
+        [Test]
+        public void CompositeParameterHandler_EmptyHandlers()
+        {
+            // 空子处理器集合：IsInitialized 应为 false
+            var handler = new CompositeParameterHandler("empty", "Empty");
+            Assert.IsFalse(handler.IsInitialized);
+
+            // 通过 IEnumerable 构造空集合
+            var handler2 = new CompositeParameterHandler("empty2", "Empty2",
+                System.Array.Empty<IParameterHandler>());
+            Assert.IsFalse(handler2.IsInitialized);
+        }
+
+        [Test]
+        public void CompositeParameterHandler_ShouldAdvanceScenarios()
+        {
+            // 覆盖各种 ShouldAdvance 边界场景
+            var handler = new CompositeParameterHandler("val", "Value",
+                new IntegerParameterHandler("i"),
+                new TestTupleHandler("tup", "Tuple", BracketType.Parentheses,
+                    new IntegerParameterHandler("a"),
+                    new IntegerParameterHandler("b")));
+
+            // 1. 简单 int 完整 + 尾部空格 → advance
+            Assert.IsTrue(handler.ShouldAdvance("42 "));
+
+            // 2. 简单 int 无尾部空格 → 不 advance
+            Assert.IsFalse(handler.ShouldAdvance("42"));
+
+            // 3. 完整元组 + 尾部空格 → advance
+            Assert.IsTrue(handler.ShouldAdvance("(1, 2) "));
+
+            // 4. 不完整元组（正在输入） → 不 advance
+            //    关键：IntegerHandler 会因尾部空格说 ShouldAdvance=true，
+            //    但它的 IsValid 为 false，所以 CompositeParameterHandler 不应 advance
+            Assert.IsFalse(handler.ShouldAdvance("(1, "));
+
+            // 5. 无效输入 + 尾部空格 → 不 advance（无 handler 同时满足 IsValid + ShouldAdvance）
+            Assert.IsFalse(handler.ShouldAdvance("abc "));
+
+            // 6. 空或 null → 不 advance
+            Assert.IsFalse(handler.ShouldAdvance(string.Empty));
+            Assert.IsFalse(handler.ShouldAdvance(null));
+        }
+
+        [Test]
+        public void CompositeParameterHandler_GetCandidates()
+        {
+            var handler = new CompositeParameterHandler("val", "Value",
+                new IntegerParameterHandler("i"),
+                new BooleanParameterHandler("b"));
+
+            // 空输入：合并所有候选项
+            var candidates = handler.GetCandidates(string.Empty);
+            Assert.That(candidates, Contains.Item("0"));       // IntegerHandler
+            Assert.That(candidates, Contains.Item("true"));    // BooleanHandler
+            Assert.That(candidates, Contains.Item("false"));   // BooleanHandler
+
+            // 部分输入匹配多个
+            var candidatesForT = handler.GetCandidates("t");
+            Assert.That(candidatesForT, Contains.Item("true"));
+
+            // 输入只匹配一个
+            var candidatesFor1 = handler.GetCandidates("1");
+            // IntegerHandler: TryParse("1") → true, result=1 ≠ 0 → 无候选项
+            // BooleanHandler: "1" 不以 "true"/"false" 开头 → 无候选项
+            Assert.That(candidatesFor1, Is.Empty);
+        }
+
+        [Test]
+        public void CompositeParameterHandler_ParseDelegation()
+        {
+            // 验证 Parse 委托给正确的子处理器
+            var handler = new CompositeParameterHandler("val", "Value",
+                new IntegerParameterHandler("i"),
+                new FloatParameterHandler("f"),
+                new BooleanParameterHandler("b"));
+
+            // int
+            Assert.That(handler.Parse("42"), Is.TypeOf<int>());
+            Assert.That((int)handler.Parse("42"), Is.EqualTo(42));
+
+            // float
+            Assert.That(handler.Parse("3.14"), Is.TypeOf<float>());
+            Assert.That((float)handler.Parse("3.14"), Is.EqualTo(3.14f).Within(1e-6f));
+
+            // bool (int 也会对 "true" 返回 false，因为 int.TryParse("true") 失败)
+            Assert.That(handler.Parse("true"), Is.TypeOf<bool>());
+            Assert.That((bool)handler.Parse("true"), Is.True);
+
+            // 匹配优先级：IntegerHandler 在 FloatHandler 前面，"1.5" 的 int 解析会失败，
+            // 但 "1" 会被 int 先匹配
+            // "1" 对 int 有效，对 float 也有效，但 int 先匹配
+            Assert.That(handler.Parse("1"), Is.TypeOf<int>());
         }
     }
 }

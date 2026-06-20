@@ -582,11 +582,12 @@ MonoBehaviour:
     m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: "CompletionState: TypingCommandName\r\nCandidateCommands: \r\n - \u27170
-    amazing_hello - \r\n - \u27170 hello <bold: > - \r\n - \u27170 hello - \r\n -
-    \u27170 hello <content: String> <tone: HelloTone> - \r\n - \u27170 hello <cute:
-    Boolean> - \r\n - \u27170 hello <content: Float> - \r\n - \u27170 hello <content:
-    String> <config: GreetConfig> - \r\n - \u27170 hello <content: Integer> - \r\n
-    - \u27170 hello_vec3 <vec3: Vec3> - \r\nCandidateParameters: none\r\n"
+    amazing_hello - \r\n - \u27170 hello <vector3: Vector3> - \r\n - \u27170 hello
+    <bold: > - \r\n - \u27170 hello - \r\n - \u27170 hello <content: String> <tone:
+    HelloTone> - \r\n - \u27170 hello <cute: Boolean> - \r\n - \u27170 hello <content:
+    Float> - \r\n - \u27170 hello <content: String> <config: GreetConfig> - \r\n
+    - \u27170 hello <content: Integer> - \r\n - \u27170 hello_vec3 <vec3: Vec3> -
+    \r\nCandidateParameters: none\r\n"
 --- !u!222 &838812662
 CanvasRenderer:
   m_ObjectHideFlags: 0
