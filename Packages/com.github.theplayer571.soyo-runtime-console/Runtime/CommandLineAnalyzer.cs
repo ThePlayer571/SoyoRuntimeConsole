@@ -8,9 +8,6 @@ using UnityEngine;
 
 namespace Soyo.SoyoRuntimeConsole
 {
-    // bad SuggestionAnalyzer的设计逼迫Console不能AddCommand，不然得把这个类拉进IConsole里，或者加个OnAddCommand回调
-
-    // todo 缓存分析结果，不然maybe性能问题
     public class CommandLineAnalyzer
     {
         public CommandLineAnalyzeResult Analyze([DisallowNull] string commandLine)

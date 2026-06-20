@@ -10,9 +10,12 @@ parameter handler system.
 
 ## Build & Test
 
-- **Open in Unity**: Open the root folder as a Unity project (2022.3+).
-- **Run tests**: In Unity, open **Window → General → Test Runner**, select **EditMode**, and run tests under
-  `ThePlayer571.SoyoRuntimeConsole.Editor.Tests`. Tests are Editor-only (NUnit, defined in `Tests/Editor/`).
+- **Open in Unity**: The user opens the root folder as a Unity project (2022.3+).
+- **Run tests**: Tests are run **manually by the user** in the Unity Editor. Claude does NOT run tests — it has no
+  Unity integration and cannot drive the Editor. The user opens **Window → General → Test Runner**, selects
+  **EditMode**, and runs tests under `ThePlayer571.SoyoRuntimeConsole.Editor.Tests`. Tests are Editor-only (NUnit,
+  defined in `Tests/Editor/`).
+- **After making changes**: Claude should remind the user to run the tests manually to verify.
 
 ## Task File
 
