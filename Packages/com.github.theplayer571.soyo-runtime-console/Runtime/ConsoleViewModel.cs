@@ -7,6 +7,9 @@ using UnityEngine;
 
 namespace Soyo.SoyoRuntimeConsole
 {
+    /// <summary>
+    /// 对IConsole的封装，提供View相关的接口。推荐View层不与IConsole直接交互，而是通过这个类。
+    /// </summary>
     public class ConsoleViewModel : IDisposable
     {
         #region 对外接口
@@ -30,9 +33,15 @@ namespace Soyo.SoyoRuntimeConsole
         /// </summary>
         public void SendInput()
         {
+            RecordHistory(InputText);
             _console.SendInput();
             _console.SetInputText(string.Empty);
         }
+
+        /// <summary>
+        /// 获取最近发送出去的命令历史。最多10条，按发送时间从新到旧排列，[0]是上一条发送的命令。
+        /// </summary>
+        public IReadOnlyList<string> GetHistory() => _history.AsReadOnly();
 
         /// <summary>
         /// 自动补全指定索引的候选参数。
@@ -127,6 +136,19 @@ namespace Soyo.SoyoRuntimeConsole
         #endregion
 
         private readonly IConsole _console;
+        private readonly List<string> _history = new List<string>(10);
+
+        private void RecordHistory(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            _history.Insert(0, text);
+            if (_history.Count > 10)
+            {
+                _history.RemoveAt(_history.Count - 1);
+            }
+        }
 
         public ConsoleViewModel() : this(new GlobalConsole())
         {

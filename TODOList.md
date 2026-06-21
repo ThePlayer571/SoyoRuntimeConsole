@@ -7,19 +7,16 @@
 - 基础的greet string/ string int count / string cute bool
 - 自定义类，嵌套元组，组合器
 
-补全所有测试
-- Console 顺便测试Analyze的功能
-    - 这个不需要测试非常复杂的命令参数，这部分在参数Handler里面已经解决了，明天再想怎么做
-- ViewModel
 
 列表参数
-
-ViewModel回溯功能
 
 命令名没有补全
 
 EnumPara支持不使用Enum，直接传入n个string
 - 要提醒ai这个和fixedString不一样，因为fixedString做了额外的处理，你需要自己新写一个string（也就是不能重构FixedString让FixedString支持这个需求）
+
+补全所有测试
+- ViewModel
 
 ## 询问
 

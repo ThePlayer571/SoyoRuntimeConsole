@@ -43,6 +43,7 @@ namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand
         {
             private ConsoleViewModel _editorViewModel;
             private int _autoCompleteIndex = 0;
+            private int _historyIndex = 0;
 
             private void OnEnable()
             {
@@ -91,6 +92,22 @@ namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand
                     if (success)
                     {
                         dc.input = _editorViewModel.InputText;
+                        EditorUtility.SetDirty(dc);
+                        dc.RefreshSuggestionDisplay();
+                    }
+                }
+
+                EditorGUILayout.EndHorizontal();
+
+                // History backtracking: index + button
+                EditorGUILayout.BeginHorizontal();
+                _historyIndex = EditorGUILayout.IntField(_historyIndex);
+                if (GUILayout.Button("Recover History", GUILayout.Width(100)))
+                {
+                    var history = _editorViewModel.GetHistory();
+                    if (history != null && _historyIndex >= 0 && _historyIndex < history.Count)
+                    {
+                        dc.input = history[_historyIndex];
                         EditorUtility.SetDirty(dc);
                         dc.RefreshSuggestionDisplay();
                     }
