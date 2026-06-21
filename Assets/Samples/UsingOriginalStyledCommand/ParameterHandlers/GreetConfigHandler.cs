@@ -18,7 +18,7 @@ namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand.ParameterHa
         {
             public GreetConfigFullHandler(string name) : base(name, "GreetConfig", BracketType.Braces,
                 new GreetStyleHandler("greetStyle"),
-                new ArrayParameterHandler("words", new StringParameterHandler("word")))
+                new ArrayParameterHandler<string>("words", new StringParameterHandler("word")))
             {
             }
 

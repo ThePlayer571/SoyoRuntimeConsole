@@ -393,5 +393,163 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.IsFalse(handler.ShouldAdvance(string.Empty));
             Assert.IsFalse(handler.ShouldAdvance(null));
         }
+
+        // ==================== 泛型版本测试 ====================
+
+        [Test]
+        public void ArrayParameterHandler_GenericTypedParse_Int()
+        {
+            // ArrayParameterHandler<int> 返回 box 内为 int[]，可直接 cast
+            var handler = new ArrayParameterHandler<int>("values", new IntegerParameterHandler("value"));
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            // IsValid 行为与非泛型一致
+            Assert.IsTrue(handler.IsValid("[1, 2, 3]"));
+            Assert.IsTrue(handler.IsValid("[]"));
+            Assert.IsFalse(handler.IsValid("[1, abc]"));
+
+            // Parse + 直接 cast 为 int[]
+            var result = (int[])handler.Parse("[1, 2, 3] ");
+            Assert.That(result.Length, Is.EqualTo(3));
+            Assert.That(result[0], Is.EqualTo(1));
+            Assert.That(result[1], Is.EqualTo(2));
+            Assert.That(result[2], Is.EqualTo(3));
+
+            // 空数组 → 空 int[]
+            var empty = (int[])handler.Parse("[] ");
+            Assert.That(empty.Length, Is.EqualTo(0));
+
+            // 单元素
+            var single = (int[])handler.Parse("[42] ");
+            Assert.That(single.Length, Is.EqualTo(1));
+            Assert.That(single[0], Is.EqualTo(42));
+
+            // 通过接口调用：返回 object，内容为 int[]
+            IParameterHandler iface = handler;
+            var boxed = iface.Parse("[1, 2, 3] ");
+            Assert.That(boxed, Is.InstanceOf<int[]>());
+            var intArray = (int[])boxed;
+            Assert.That(intArray.Length, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void ArrayParameterHandler_GenericTypedParse_Float()
+        {
+            var handler = new ArrayParameterHandler<float>("floats", new FloatParameterHandler("value"));
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            // Parse + 直接 cast 为 float[]
+            var result = (float[])handler.Parse("[1.5, 2.0, 3.14] ");
+            Assert.That(result.Length, Is.EqualTo(3));
+            Assert.That(result[0], Is.EqualTo(1.5f).Within(1e-6f));
+            Assert.That(result[1], Is.EqualTo(2.0f).Within(1e-6f));
+            Assert.That(result[2], Is.EqualTo(3.14f).Within(1e-6f));
+
+            // 通过接口调用
+            IParameterHandler iface = handler;
+            var boxed = iface.Parse("[1.5, 2.0] ");
+            Assert.That(boxed, Is.InstanceOf<float[]>());
+        }
+
+        [Test]
+        public void ArrayParameterHandler_GenericTypedParse_Bool()
+        {
+            var handler = new ArrayParameterHandler<bool>("flags", new BooleanParameterHandler("flag"));
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            var result = (bool[])handler.Parse("[true, false, true] ");
+            Assert.That(result.Length, Is.EqualTo(3));
+            Assert.That(result[0], Is.True);
+            Assert.That(result[1], Is.False);
+            Assert.That(result[2], Is.True);
+
+            // 通过接口调用
+            IParameterHandler iface = handler;
+            var boxed = iface.Parse("[true, false] ");
+            Assert.That(boxed, Is.InstanceOf<bool[]>());
+        }
+
+        [Test]
+        public void ArrayParameterHandler_GenericTypedParse_String()
+        {
+            var handler = new ArrayParameterHandler<string>("words", new StringParameterHandler("word"));
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            var result = (string[])handler.Parse("[hello, world] ");
+            Assert.That(result.Length, Is.EqualTo(2));
+            Assert.That(result[0], Is.EqualTo("hello"));
+            Assert.That(result[1], Is.EqualTo("world"));
+
+            // 通过接口调用
+            IParameterHandler iface = handler;
+            var boxed = iface.Parse("[foo, bar] ");
+            Assert.That(boxed, Is.InstanceOf<string[]>());
+        }
+
+        [Test]
+        public void ArrayParameterHandler_GenericNested()
+        {
+            // 嵌套数组：int[][]，使用两个泛型 ArrayParameterHandler
+            var innerHandler = new ArrayParameterHandler<int>("inner", new IntegerParameterHandler("value"));
+            var handler = new ArrayParameterHandler<int[]>("nested", innerHandler);
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            // IsValid
+            Assert.IsTrue(handler.IsValid("[[1, 2], [3, 4]]"));
+            Assert.IsTrue(handler.IsValid("[]")); // 外层空数组
+            Assert.IsFalse(handler.IsValid("[[1, abc]]"));
+
+            // Parse + 直接 cast 为 int[][]
+            var result = (int[][])handler.Parse("[[1, 2], [3, 4]] ");
+            Assert.That(result.Length, Is.EqualTo(2));
+            Assert.That(result[0], Is.EqualTo(new[] { 1, 2 }));
+            Assert.That(result[1], Is.EqualTo(new[] { 3, 4 }));
+
+            // 空外层数组
+            var empty = (int[][])handler.Parse("[] ");
+            Assert.That(empty.Length, Is.EqualTo(0));
+
+            // 通过接口调用
+            IParameterHandler iface = handler;
+            var boxed = iface.Parse("[[1, 2], [3, 4]] ");
+            Assert.That(boxed, Is.InstanceOf<int[][]>());
+            var nested = (int[][])boxed;
+            Assert.That(nested.Length, Is.EqualTo(2));
+            Assert.That(nested[0], Is.InstanceOf<int[]>());
+        }
+
+        [Test]
+        public void ArrayParameterHandler_NonGeneric_BackwardCompatible()
+        {
+            // 验证非泛型 ArrayParameterHandler 行为与之前完全一致：返回 object[]
+            var handler = new ArrayParameterHandler("values", new IntegerParameterHandler("value"));
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            // Parse 返回 object[]（而非 int[]）
+            var result = handler.Parse("[1, 2, 3] ");
+            Assert.That(result, Is.InstanceOf<object[]>());
+            var objArray = (object[])result;
+            Assert.That(objArray.Length, Is.EqualTo(3));
+            Assert.That((int)objArray[0], Is.EqualTo(1));
+            Assert.That((int)objArray[1], Is.EqualTo(2));
+            Assert.That((int)objArray[2], Is.EqualTo(3));
+
+            // 通过接口调用
+            IParameterHandler iface = handler;
+            var boxed = iface.Parse("[42] ");
+            Assert.That(boxed, Is.InstanceOf<object[]>());
+
+            // GetCandidates、IsValid 行为不变
+            Assert.That(handler.GetCandidates(string.Empty),
+                Is.EquivalentTo(new[] { "[", "[0]" }));
+            Assert.IsTrue(handler.IsValid("[1, 2]"));
+            Assert.IsTrue(handler.IsValid("[]"));
+        }
     }
 }

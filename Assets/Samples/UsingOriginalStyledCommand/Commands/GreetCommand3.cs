@@ -18,7 +18,7 @@ namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand.Commands
         {
             var greetTone = (ValueObjects.GreetTone)parameters![0];
             var withHandShake = (bool)parameters[1];
-            var words = (object[])parameters[2];
+            var words = (object[])parameters[2]; // 这里没用ArrayParameterHandler<T>，解析为object
             var greetStyle = new ValueObjects.GreetStyle(greetTone, withHandShake);
             var greetConfig = new ValueObjects.GreetConfig(greetStyle, words.Select(w => (string)w).ToArray());
             Debug.Log(greetConfig.ToString());
