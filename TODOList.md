@@ -14,9 +14,6 @@ CLAUDE.md: 计划用中文，你更被推荐在问题确认之前问清楚（如
 EnumPara支持不使用Enum，直接传入n个string
 - 要提醒ai这个和fixedString不一样，因为fixedString做了额外的处理，你需要自己新写一个string（也就是不能重构FixedString让FixedString支持这个需求）
 
-补全所有测试 可能不需要了
-- ViewModel
-
 ## 询问
 
 找到文档更新工作流
