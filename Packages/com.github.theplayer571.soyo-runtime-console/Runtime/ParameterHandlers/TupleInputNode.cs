@@ -13,8 +13,8 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
     /// <list type="bullet">
     /// <item><see cref="IsEmpty"/>: 输入为空</item>
     /// <item><see cref="IsParseFailed"/>: 解析不成立 — 输入非空但不匹配处理器的括号格式</item>
-    /// <item><see cref="IsLeaf"/>: 叶节点 — 由非 TupleParameterHandler 的处理器负责，文本原样保留</item>
-    /// <item><see cref="IsTuple"/>: 元组节点 — 由 TupleParameterHandler 负责，包含已完成的子节点和正在输入的文本</item>
+    /// <item><see cref="IsLeaf"/>: 叶节点 — 由非 BracketParameterHandler 的处理器负责，文本原样保留</item>
+    /// <item><see cref="IsTuple"/>: 元组节点 — 由 BracketParameterHandler 负责，包含已完成的子节点和正在输入的文本</item>
     /// </list>
     /// </summary>
     internal class TupleInputNode

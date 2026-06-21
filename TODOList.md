@@ -2,6 +2,8 @@
 
 ```
 
+CLAUDE.md: 计划用中文，你更被推荐在问题确认之前问清楚（如果不清楚），而不是直接给结果
+
 目前的Sample太垃圾了
 - 包括：
 - 基础的greet string/ string int count / string cute bool

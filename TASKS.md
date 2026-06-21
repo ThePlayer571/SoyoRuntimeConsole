@@ -1,7 +1,10 @@
 # TASKS.md
 
-给Soyo.SoyoRuntimeConsole.ConsoleViewModel添加回溯功能
+## ✅ 已完成
 
-ConsoleViewModel会记住前10条”发送出去“的命令，提供一个接口可以获取这些string。注意不是直接写入InputText，而是获取string。
+~~添加一个ParameterHandler，叫做数组参数，按这种语法传入[0, 0, 0]，支持若干个参数（支持0个参数）。~~
 
-
+**实现：** `ArrayParameterHandler` 继承自 `TupleParameterHandler`，通过 `IsVariableLength` 虚属性支持变长数组。
+- 文件：`Runtime/ParameterHandlers/ArrayParameterHandler.cs`
+- 测试：`Tests/Editor/ParameterHandlerArrayTests.cs`
+- 修改：`TupleParameterHandler.cs` 增加 `IsVariableLength` 虚属性及 16 处兼容性修改

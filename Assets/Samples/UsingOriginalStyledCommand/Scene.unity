@@ -586,10 +586,11 @@ MonoBehaviour:
     <bold: > - \r\n - \u27170 hello - \r\n - \u27170 hello <content: String> <tone:
     HelloTone> - \r\n - \u27170 hello <cute: Boolean> - \r\n - \u27170 hello <content:
     Float> - \r\n - \u27170 hello <content: String> <config: GreetConfig> - \r\n
-    - \u27170 hello <content: Integer> - \r\n - \u27170 hello_multi <multi_config:
-    MultiGreetConfig> - \r\n - \u27170 hello_nested <nested_greet: NestedGreet> -
-    \r\n - \u27170 hello_style <style: GreetStyle> - \r\n - \u27170 hello_vec3 <vec3:
-    Vec3> - \r\nCandidateParameters: none\r\n"
+    - \u27170 hello <content: Integer> - \r\n - \u27170 hello <values: Integer[]>
+    - \r\n - \u27170 hello_multi <multi_config: MultiGreetConfig> - \r\n - \u27170
+    hello_nested <nested_greet: NestedGreet> - \r\n - \u27170 hello_style <style:
+    GreetStyle> - \r\n - \u27170 hello_vec3 <vec3: Vec3> - \r\nCandidateParameters:
+    none\r\n"
 --- !u!222 &838812662
 CanvasRenderer:
   m_ObjectHideFlags: 0
