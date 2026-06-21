@@ -3,25 +3,15 @@ using Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand.Commands;
 
 namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand
 {
+    // 定义控制台
     public class CustomConsole : ConsoleBase
     {
         private static IEnumerable<ConsoleCommandDefinition> GetCommands()
         {
-            yield return new AmazingHelloCommand();
-            yield return new HelloVector3Command();
-            yield return new HelloBoldCommand();
-            yield return new HelloCommand();
-            yield return new HelloContentToneCommand();
-            yield return new HelloCuteCommand();
-            yield return new HelloFloatCommand();
-            yield return new HelloGreetConfigCommand();
-            yield return new HelloIntCommand();
-            yield return new HelloVec3Command();
-            yield return new HelloGreetStyleCommand();
-            yield return new HelloNestedGreetCommand();
-            yield return new HelloMultiGreetCommand();
-            yield return new HelloIntArrayCommand();
-            yield return new HelloStyleCommand();
+            yield return new QuickGreetCommand();
+            yield return new GreetCommand();
+            yield return new GreetCommand2();
+            yield return new GreetCommand3();
         }
 
 
