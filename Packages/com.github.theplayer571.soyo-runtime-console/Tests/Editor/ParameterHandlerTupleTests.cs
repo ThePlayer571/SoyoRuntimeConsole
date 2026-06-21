@@ -398,7 +398,10 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.IsTrue(handler.ShouldAdvance("12 "));
             Assert.IsFalse(handler.ShouldAdvance("1.5"));
             Assert.IsTrue(handler.ShouldAdvance("1.5 "));
-            Assert.IsFalse(handler.ShouldAdvance("abc ")); // 无效输入不 advance
+            // 无效输入 + 尾部空格：所有子处理器 ShouldAdvance 均为 true（以空格结尾），
+            // 回退路径生效 —— 此时 advance 是正确的，避免卡死在当前参数位置。
+            // 该参数会在后续的 IsValid 检查中被拒绝。
+            Assert.IsTrue(handler.ShouldAdvance("abc "));
 
             // Parse：整数走 IntegerHandler，浮点数走 FloatHandler
             Assert.That((int)handler.Parse("12 "), Is.EqualTo(12));
@@ -494,16 +497,38 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.IsTrue(handler.ShouldAdvance("(1, 2) "));
 
             // 4. 不完整元组（正在输入） → 不 advance
-            //    关键：IntegerHandler 会因尾部空格说 ShouldAdvance=true，
-            //    但它的 IsValid 为 false，所以 CompositeParameterHandler 不应 advance
+            //    关键：IntegerHandler 对 "(1, " 的 ShouldAdvance=true（空格结尾），
+            //    但 TupleHandler 的 ShouldAdvance=false（开括号未闭合），
+            //    "所有子处理器均 true"的回退条件不成立，正确阻止了 advance。
             Assert.IsFalse(handler.ShouldAdvance("(1, "));
 
-            // 5. 无效输入 + 尾部空格 → 不 advance（无 handler 同时满足 IsValid + ShouldAdvance）
-            Assert.IsFalse(handler.ShouldAdvance("abc "));
+            // 5. 无效输入 + 尾部空格 → advance（回退路径：IntegerHandler 和 TupleHandler
+            //    的 ShouldAdvance 都返回 true，因为两者都不在结构化解析中途）。
+            //    该参数会在后续的 IsValid 检查中被命令分析器拒绝。
+            Assert.IsTrue(handler.ShouldAdvance("abc "));
 
             // 6. 空或 null → 不 advance
             Assert.IsFalse(handler.ShouldAdvance(string.Empty));
             Assert.IsFalse(handler.ShouldAdvance(null));
+
+            // 7. 无效输入 + 无尾部空格 → 不 advance
+            //    所有子处理器的 ShouldAdvance 都为 false（无空格结尾），不触发回退路径。
+            Assert.IsFalse(handler.ShouldAdvance("abc"));
+
+            // 8. 纯空格分隔类处理器组合 + 无效输入 + 尾部空格 → advance（回退路径）
+            //    验证当 Composite 内部全是 SpaceSplitHandler（无 BracketHandler）时，
+            //    所有子处理器 ShouldAdvance 一致为 true，回退路径生效。
+            var spaceOnlyHandler = new CompositeParameterHandler("num", "Number",
+                new IntegerParameterHandler("i"),
+                new FloatParameterHandler("f"),
+                new BooleanParameterHandler("b"));
+
+            Assert.IsTrue(spaceOnlyHandler.ShouldAdvance("xyz ")); // 回退路径 advance
+            Assert.IsFalse(spaceOnlyHandler.ShouldAdvance("xyz")); // 无尾部空格，不回退
+
+            // 9. 混合 BracketHandler + SpaceSplitHandler，BracketHandler 处于结构化解析中途
+            //    → 不 advance（回退路径被 BracketHandler 的 false 阻断）
+            Assert.IsFalse(handler.ShouldAdvance("(42, ")); // TupleHandler 检测到未闭合括号
         }
 
         [Test]

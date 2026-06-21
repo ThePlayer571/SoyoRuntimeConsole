@@ -8,7 +8,7 @@
 
 引入强制泛型返回值解决类型不明确问题，不然array永远是object[]，也可以给Array加泛型
 
-greet {Formal, true} [ bug
+greet {Formal, true} 
 
 ## 询问
 

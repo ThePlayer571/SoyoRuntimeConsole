@@ -110,10 +110,16 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 
         /// <inheritdoc />
         /// <remarks>
-        /// 仅当存在某个子处理器同时满足 <see cref="IParameterHandler.IsValid"/> 和
-        /// <see cref="IParameterHandler.ShouldAdvance"/> 时才返回 true。
-        /// 这确保了不会在用户正输入元组（如 "(1, "）时因简单处理器（如 IntegerHandler）
-        /// 检测到尾部空格而提前 advance。
+        /// 满足以下任一条件时返回 true：
+        /// 1. 存在某个子处理器同时满足 <see cref="IParameterHandler.IsValid"/> 和
+        ///    <see cref="IParameterHandler.ShouldAdvance"/>（标准路径：参数合法且完整）。
+        /// 2. 所有子处理器的 <see cref="IParameterHandler.ShouldAdvance"/> 均返回 true
+        ///    （回退路径：当输入与所有子处理器都不匹配，但每个子处理器都认为"输入看起来完整"时，
+        ///     如输入 "abc " 对 IntegerHandler 和 FloatHandler 都不合法但都以空格结尾，
+        ///     此时也应该 advance，避免卡死在当前参数位置）。
+        ///
+        /// 第2条规则不会误伤元组输入（如 "(1, "）的场景，因为 TupleParameterHandler 对未闭合
+        /// 的元组输入返回 ShouldAdvance = false，使得"所有子处理器均 true"的条件不成立。
         /// </remarks>
         public override bool ShouldAdvance(string parameter)
         {
@@ -122,15 +128,22 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
                 return false;
             }
 
+            var allShouldAdvance = _handlers.Count > 0;
+
             for (var i = 0; i < _handlers.Count; i++)
             {
                 if (_handlers[i].IsValid(parameter) && _handlers[i].ShouldAdvance(parameter))
                 {
                     return true;
                 }
+
+                if (!_handlers[i].ShouldAdvance(parameter))
+                {
+                    allShouldAdvance = false;
+                }
             }
 
-            return false;
+            return allShouldAdvance;
         }
 
         /// <inheritdoc />
