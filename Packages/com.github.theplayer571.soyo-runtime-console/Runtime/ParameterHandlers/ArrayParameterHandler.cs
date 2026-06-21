@@ -8,10 +8,12 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
     /// 所有位置的子参数使用同一个元素处理器解析。
     /// </summary>
     /// <example>
+    /// <code>
     /// var handler = new ArrayParameterHandler("values", new IntegerParameterHandler("value"));
     /// handler.IsValid("[1, 2, 3]"); // true
     /// handler.IsValid("[]"); // true（空数组）
     /// var result = (object[])handler.Parse("[1, 2, 3]"); // object[] { 1, 2, 3 }
+    /// </code>
     /// </example>
     public class ArrayParameterHandler : BracketParameterHandler
     {
