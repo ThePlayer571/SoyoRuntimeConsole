@@ -21,6 +21,7 @@ namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand
             yield return new HelloNestedGreetCommand();
             yield return new HelloMultiGreetCommand();
             yield return new HelloIntArrayCommand();
+            yield return new HelloStyleCommand();
         }
 
 

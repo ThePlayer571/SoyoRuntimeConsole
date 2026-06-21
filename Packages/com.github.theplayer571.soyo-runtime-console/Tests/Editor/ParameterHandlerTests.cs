@@ -1,6 +1,8 @@
 using System;
 using NUnit.Framework;
 using Soyo.SoyoRuntimeConsole.ParameterHandlers;
+using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 {
@@ -129,6 +131,41 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.IsTrue(handler.ShouldAdvance("hello "));
             Assert.IsFalse(handler.ShouldAdvance("hello"));
             Assert.That(handler.Parse("hello"), Is.EqualTo(null));
+        }
+
+        [Test]
+        public void StringOptionParameterHandler()
+        {
+            var handler = new StringOptionParameterHandler("difficulty", "Easy", "Normal", "Hard");
+
+            Assert.IsTrue(handler.IsInitialized);
+            Assert.That(handler.GetCandidates(string.Empty), Is.EquivalentTo(new[] { "Easy", "Normal", "Hard" }));
+            Assert.That(handler.GetCandidates("a"), Contains.Item("Hard"));
+            Assert.That(handler.GetCandidates("e"), Contains.Item("Easy"));
+            Assert.That(handler.GetCandidates("X"), Is.Empty);
+            Assert.IsFalse(handler.IsValid("easy"));
+            Assert.IsTrue(handler.IsValid("Easy"));
+            Assert.IsTrue(handler.ShouldAdvance("Easy "));
+            Assert.IsFalse(handler.ShouldAdvance("Easy"));
+
+            Assert.That((string)handler.Parse("Normal"), Is.EqualTo("Normal"));
+            Assert.That((string)handler.Parse("Hard"), Is.EqualTo("Hard"));
+        }
+
+        [Test]
+        public void StringOptionParameterHandler_EmptyOptions_NotInitialized()
+        {
+            LogAssert.Expect(LogType.Error, "StringOptionParameterHandler: options must contain at least one string.");
+            var handler = new StringOptionParameterHandler("empty");
+            Assert.IsFalse(handler.IsInitialized);
+        }
+
+        [Test]
+        public void StringOptionParameterHandler_WhitespaceOption_NotInitialized()
+        {
+            LogAssert.Expect(LogType.Error, "StringOptionParameterHandler: option at index 1 contains whitespace at char 3. Input: \"has space\"");
+            var handler = new StringOptionParameterHandler("bad", "ok", "has space");
+            Assert.IsFalse(handler.IsInitialized);
         }
 
 
