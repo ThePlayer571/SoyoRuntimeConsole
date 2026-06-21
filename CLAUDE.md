@@ -28,6 +28,11 @@ Samples are authored under `Assets/Samples/` during development. The canonical p
 `Packages/com.github.theplayer571.soyo-runtime-console/Samples~` (Unity's `Samples~` convention — hidden from
 the Editor, surfaced in Package Manager for import). If a Sample isn't found in one location, check the other.
 
+## Language
+
+- **Plan mode**: When entering plan mode (`EnterPlanMode`), always write the plan in **Chinese (中文)**. The user
+  reads Chinese — mixed-language or English plans are difficult to follow.
+
 ## Scope of Work
 
 **Only write code and tests.** Do not modify documentation files (e.g. `README.md`, `CHANGELOG.md`, etc.) or any
