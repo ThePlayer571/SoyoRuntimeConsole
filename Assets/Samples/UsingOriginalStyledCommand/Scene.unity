@@ -578,19 +578,16 @@ MonoBehaviour:
     m_Alignment: 0
     m_AlignByGeometry: 0
     m_RichText: 1
-    m_HorizontalOverflow: 0
-    m_VerticalOverflow: 0
+    m_HorizontalOverflow: 1
+    m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "CompletionState: TypingCommandName\r\nCandidateCommands: \r\n - \u27170
-    amazing_hello - \r\n - \u27170 hello <vector3: Vector3> - \r\n - \u27170 hello
-    <bold: > - \r\n - \u27170 hello - \r\n - \u27170 hello <content: String> <tone:
-    HelloTone> - \r\n - \u27170 hello <cute: Boolean> - \r\n - \u27170 hello <content:
-    Float> - \r\n - \u27170 hello <content: String> <config: GreetConfig> - \r\n
-    - \u27170 hello <content: Integer> - \r\n - \u27170 hello <values: Integer[]>
-    - \r\n - \u27170 hello_multi <multi_config: MultiGreetConfig> - \r\n - \u27170
-    hello_nested <nested_greet: NestedGreet> - \r\n - \u27170 hello_style <style:
-    GreetStyle> - \r\n - \u27170 hello_vec3 <vec3: Vec3> - \r\nCandidateParameters:
-    none\r\n"
+  m_Text: "CompletionState: TypingParameters\r\nCandidateCommands: \r\n - \u27171
+    hello <vector3: Vector3> - \r\n - \u27171 hello <bold: > - \r\n - \u27130 hello
+    - \r\n - \u27171 hello <content: String> <tone: HelloTone> - \r\n - \u27171 hello
+    <cute: Boolean> - \r\n - \u27171 hello <content: Float> - \r\n - \u27171 hello
+    <content: String> <config: GreetConfig> - \r\n - \u27171 hello <content: Integer>
+    - \r\n - \u27171 hello <values: Integer[]> - \r\nCandidates: ( || (0, 0, 0) ||
+    bold || \"\" || true || false || 0 || 0.0 || [ || [0]\r\n"
 --- !u!222 &838812662
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -822,7 +819,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e4fbd1ace3246c69d87392aa37257bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  input: 
+  input: 'hello '
   suggestionText: {fileID: 838812661}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

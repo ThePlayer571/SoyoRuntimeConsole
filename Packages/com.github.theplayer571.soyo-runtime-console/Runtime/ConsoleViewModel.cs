@@ -44,38 +44,53 @@ namespace Soyo.SoyoRuntimeConsole
         public IReadOnlyList<string> GetHistory() => _history.AsReadOnly();
 
         /// <summary>
-        /// 自动补全指定索引的候选参数。
+        /// 自动补全指定索引的候选命令名或参数。
         /// </summary>
         /// <param name="candidateIndex"></param>
         public bool AutoComplete(int candidateIndex = 0)
         {
             var suggestion = GetSuggestion();
-            var candidateParameters = suggestion.CandidateParameters;
 
             // 提前退出
-            if (candidateParameters == null || candidateIndex < 0 || candidateIndex >= candidateParameters.Count ||
+            var candidates = suggestion.Candidates;
+            if (candidates == null || candidateIndex < 0 || candidateIndex >= candidates.Count ||
                 suggestion.CandidateCommands == null)
             {
                 return false;
             }
 
-            var chosenCandidateParameter = candidateParameters[candidateIndex];
-            var referenceCommand = suggestion.CandidateCommands.FirstOrDefault(command =>
-                command.CandidateParameters != null && command.CandidateParameters.Contains(chosenCandidateParameter));
+            var chosenCandidate = candidates[candidateIndex];
 
-            var commandStringBuilder = new StringBuilder();
-            commandStringBuilder.Append(referenceCommand.AnalyzeResult.Definition.CommandName.Name);
-            commandStringBuilder.Append(' ');
-
-            for (int i = 0; i < referenceCommand.AnalyzeResult.Parameters.Count - 1; i++)
+            switch (suggestion.State)
             {
-                commandStringBuilder.Append(referenceCommand.AnalyzeResult.Parameters[i]);
+                case Suggestion.CompletionState.TypingCommandName:
+                {
+                    // 补全命令名
+                    _console.SetInputText(chosenCandidate + " ");
+                    return true;
+                }
+                case Suggestion.CompletionState.TypingParameters:
+                {
+                    var referenceCommand = suggestion.CandidateCommands.FirstOrDefault(command =>
+                        command.Candidates != null && command.Candidates.Contains(chosenCandidate));
+
+                    var commandStringBuilder = new StringBuilder();
+                    commandStringBuilder.Append(referenceCommand.AnalyzeResult.Definition.CommandName.Name);
+                    commandStringBuilder.Append(' ');
+
+                    for (int i = 0; i < referenceCommand.AnalyzeResult.Parameters.Count - 1; i++)
+                    {
+                        commandStringBuilder.Append(referenceCommand.AnalyzeResult.Parameters[i]);
+                    }
+
+                    commandStringBuilder.Append(chosenCandidate);
+
+                    _console.SetInputText(commandStringBuilder.ToString());
+                    return true;
+                }
+                default:
+                    return false;
             }
-
-            commandStringBuilder.Append(chosenCandidateParameter);
-
-            _console.SetInputText(commandStringBuilder.ToString());
-            return true;
         }
 
         /// <summary>
@@ -103,7 +118,7 @@ namespace Soyo.SoyoRuntimeConsole
                             helpText: _console.CommandHelpText.GetValueOrDefault(desc.Definition.CommandName),
                             parameterDescriptions: desc.Definition.ParameterHandlers
                                 .Select(handler => handler.GetDescription()).ToList(),
-                            candidateParameters: null,
+                            candidates: new[] { desc.Definition.CommandName.Name },
                             analyzeResult: desc
                         );
                     }).ToList();
@@ -124,7 +139,7 @@ namespace Soyo.SoyoRuntimeConsole
                             helpText: _console.CommandHelpText.GetValueOrDefault(desc.Definition.CommandName),
                             parameterDescriptions: desc.Definition.ParameterHandlers
                                 .Select(handler => handler.GetDescription()).ToList(),
-                            candidateParameters: candidateParameters,
+                            candidates: candidateParameters,
                             analyzeResult: desc
                         );
                     }).ToList();
@@ -138,17 +153,6 @@ namespace Soyo.SoyoRuntimeConsole
         private readonly IConsole _console;
         private readonly List<string> _history = new List<string>(10);
 
-        private void RecordHistory(string text)
-        {
-            if (string.IsNullOrEmpty(text))
-                return;
-
-            _history.Insert(0, text);
-            if (_history.Count > 10)
-            {
-                _history.RemoveAt(_history.Count - 1);
-            }
-        }
 
         public ConsoleViewModel() : this(new GlobalConsole())
         {
@@ -163,6 +167,18 @@ namespace Soyo.SoyoRuntimeConsole
         public void Dispose()
         {
             Application.logMessageReceived -= HandleLog;
+        }
+
+        private void RecordHistory(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            _history.Insert(0, text);
+            if (_history.Count > 10)
+            {
+                _history.RemoveAt(_history.Count - 1);
+            }
         }
 
         private void HandleLog(string logString, string stackTrace, LogType type)
