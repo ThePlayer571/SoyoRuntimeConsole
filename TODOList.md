@@ -9,8 +9,8 @@
 
 补全所有测试
 - Console 顺便测试Analyze的功能
+    - 这个不需要测试非常复杂的命令参数，这部分在参数Handler里面已经解决了，明天再想怎么做
 - ViewModel
-- CommandName
 
 列表参数
 

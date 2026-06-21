@@ -8,8 +8,16 @@ using UnityEngine;
 
 namespace Soyo.SoyoRuntimeConsole
 {
+    /// <summary>
+    /// 命令行解析器，负责把文本解析为可读性良好的数据结构。
+    /// </summary>
     public class CommandLineAnalyzer
     {
+        public CommandLineAnalyzer(IConsole console)
+        {
+            _console = console;
+        }
+
         public CommandLineAnalyzeResult Analyze([DisallowNull] string commandLine)
         {
             // 查缓存
@@ -180,10 +188,5 @@ namespace Soyo.SoyoRuntimeConsole
         // 变量
         private string _lastAnalyzedCommandLine = null;
         private CommandLineAnalyzeResult _lastAnalyzeResult = default;
-
-        public CommandLineAnalyzer(IConsole console)
-        {
-            _console = console;
-        }
     }
 }

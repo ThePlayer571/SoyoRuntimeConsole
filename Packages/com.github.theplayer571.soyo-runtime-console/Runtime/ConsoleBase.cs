@@ -1,27 +1,34 @@
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using UnityEngine;
 
 namespace Soyo.SoyoRuntimeConsole
 {
+    /// <summary>
+    /// 控制台的抽象基类，实现了 IConsole 接口的核心逻辑。如果你想自定义Console，建议继承这个类。
+    /// </summary>
     public abstract class ConsoleBase : IConsole
     {
         #region 接口实现
 
+        /// <inheritdoc/>
         public virtual void SetInputText(string text)
         {
             _inputText = text;
         }
 
+        /// <inheritdoc/>
         public virtual string InputText => _inputText;
 
-        public IReadOnlyList<ConsoleCommandDefinition> Commands => _commands;
+        /// <inheritdoc/>
+        public virtual IReadOnlyList<ConsoleCommandDefinition> Commands => _commands;
 
-        public IReadOnlyDictionary<CommandName, string> CommandHelpText => _commandHelpText;
+        /// <inheritdoc/>
+        public virtual IReadOnlyDictionary<CommandName, string> CommandHelpText => _commandHelpText;
 
-        public CommandLineAnalyzer CommandLineAnalyzer => _commandLineAnalyzer;
+        /// <inheritdoc/>
+        public virtual CommandLineAnalyzer CommandLineAnalyzer => _commandLineAnalyzer;
 
+        /// <inheritdoc/>
         public virtual bool SendInput(int chosenCommandIndex = 0)
         {
             // 分析Input
@@ -69,17 +76,22 @@ namespace Soyo.SoyoRuntimeConsole
 
         #endregion
 
-        protected ConsoleBase([DisallowNull] IEnumerable<ConsoleCommandDefinition> commandDefinitions)
+        /// <summary>
+        /// 使用指定配置初始化控制台。当配置有效时，直接持有配置中的命令列表和帮助文本的引用（而非拷贝），
+        /// 以避免不必要的内存分配；配置无效时则初始化为空集合。
+        /// </summary>
+        protected ConsoleBase(ConsoleConfig consoleConfig)
         {
-            foreach (var commandDefinition in commandDefinitions)
+            if (consoleConfig.IsValid)
             {
-                if (commandDefinition == null)
-                {
-                    Debug.LogError("Cannot add null command.");
-                    continue;
-                }
-
-                AddCommand(commandDefinition);
+                // 直接换引用而非拷贝：避免额外的内存分配，调用方不应在构造后修改配置中的集合
+                _commands = consoleConfig.CommandDefinitions;
+                _commandHelpText = consoleConfig.CommandHelpText;
+            }
+            else
+            {
+                _commands = new List<ConsoleCommandDefinition>();
+                _commandHelpText = new Dictionary<CommandName, string>();
             }
 
             _commandLineAnalyzer = new CommandLineAnalyzer(this);
@@ -87,20 +99,10 @@ namespace Soyo.SoyoRuntimeConsole
 
         // 变量
         private string _inputText = string.Empty;
-        private readonly List<ConsoleCommandDefinition> _commands = new();
+        private readonly IReadOnlyList<ConsoleCommandDefinition> _commands;
+
         private readonly CommandLineAnalyzer _commandLineAnalyzer;
-        // todo _commandHelpText定义方式
-        private readonly Dictionary<CommandName, string> _commandHelpText = new();
 
-        private void AddCommand([DisallowNull] ConsoleCommandDefinition commandDefinition)
-        {
-            if (_commands.Contains(commandDefinition))
-            {
-                Debug.LogWarning($"Command '{commandDefinition.CommandName}' is already added.");
-                return;
-            }
-
-            _commands.Add(commandDefinition);
-        }
+        private readonly IReadOnlyDictionary<CommandName, string> _commandHelpText;
     }
 }

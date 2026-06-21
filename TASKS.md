@@ -1,13 +1,10 @@
 # TASKS.md
 
-目前TupleParameterHandler这个类的GetCandidates方法非常乱，我打算重构它。
+请你完成以下类型注释的编写：namespace Soyo.SoyoRuntimeConsole 下
+- [x] ConsoleConfig
+- [x] ConsoleBase
+- [x] IConsole
 
-## 需知
+注释使用中文，简单写写即可，不用太详细
 
-这个类是你写的，目前功能完全没问题，但是太乱了，不利于维护和扩展。所以重构是有必要的。
-
-现在你需要和我讨论出一个让我满意的设计方案。
-
-## 我的想法
-
-我觉得可以多套一层，搞一个专门来解析元组参数的类，提供一个可读性更好的接口，然后让GetCandidates方法调用这个类。
+我在这些类的注释todo给了你一些提示，你需要看
