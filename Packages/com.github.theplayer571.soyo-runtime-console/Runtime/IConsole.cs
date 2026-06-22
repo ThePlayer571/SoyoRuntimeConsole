@@ -8,6 +8,8 @@ namespace Soyo.SoyoRuntimeConsole
     /// </summary>
     public interface IConsole
     {
+        ConsoleKey Key { get; }
+
         /// <summary>
         /// 设置InputText。InputText与自动补全、命令解析、命令执行等功能相关。
         /// </summary>

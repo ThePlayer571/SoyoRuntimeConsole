@@ -11,6 +11,9 @@ namespace Soyo.SoyoRuntimeConsole
         #region 接口实现
 
         /// <inheritdoc/>
+        public ConsoleKey Key => _key;
+
+        /// <inheritdoc/>
         public virtual void SetInputText(string text)
         {
             _inputText = text;
@@ -100,6 +103,7 @@ namespace Soyo.SoyoRuntimeConsole
         // 变量
         private string _inputText = string.Empty;
         private readonly IReadOnlyList<ConsoleCommandDefinition> _commands;
+        private readonly ConsoleKey _key;
 
         private readonly CommandLineAnalyzer _commandLineAnalyzer;
 

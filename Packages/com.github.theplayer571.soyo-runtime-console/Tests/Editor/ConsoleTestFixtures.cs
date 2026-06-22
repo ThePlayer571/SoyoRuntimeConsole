@@ -74,7 +74,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
                 yield return new HelloWorldCommand();
             }
 
-            public TestConsole() : base(new ConsoleConfig(GetCommands(), null))
+            public TestConsole() : base(new ConsoleConfig(new ConsoleKey("TestConsole"),GetCommands(), null))
             {
             }
         }
@@ -97,7 +97,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
                 yield return (new CommandName("hello_world"), "Says hello world");
             }
 
-            public TestConsoleWithHelp() : base(new ConsoleConfig(GetCommands(), GetHelpText()))
+            public TestConsoleWithHelp() : base(new ConsoleConfig(new ConsoleKey("TestConsoleWithHelp"),GetCommands(), GetHelpText()))
             {
             }
         }

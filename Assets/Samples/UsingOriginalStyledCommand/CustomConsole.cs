@@ -15,7 +15,7 @@ namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand
         }
 
 
-        public CustomConsole() : base(new ConsoleConfig(GetCommands(), null))
+        public CustomConsole() : base(new ConsoleConfig(new ConsoleKey(""), GetCommands(), null))
         {
         }
     }

@@ -1,7 +1,8 @@
 ## AI不要读这部分！
 
 ```
-引入强制泛型返回值解决类型不明确问题，不然array永远是object[]，也可以给Array加泛型
+
+ConsoleConfig + readonly
 
 ## 询问
 

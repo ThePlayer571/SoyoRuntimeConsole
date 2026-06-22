@@ -12,13 +12,17 @@ namespace Soyo.SoyoRuntimeConsole
     public struct ConsoleConfig
     {
         public bool IsValid { get; }
+        public ConsoleKey Key { get; }
         public IReadOnlyDictionary<CommandName, string> CommandHelpText { get; }
         public IReadOnlyList<ConsoleCommandDefinition> CommandDefinitions { get; }
 
         public ConsoleConfig(
+            ConsoleKey key,
             [AllowNull] IEnumerable<ConsoleCommandDefinition> commands,
             [AllowNull] IEnumerable<ValueTuple<CommandName, string>> commandHelpText)
         {
+            Key = key;
+            
             var commandHelpTextDict = new Dictionary<CommandName, string>();
             var commandDefinitionsList = new List<ConsoleCommandDefinition>();
 
