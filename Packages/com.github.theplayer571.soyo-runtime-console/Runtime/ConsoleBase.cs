@@ -85,6 +85,8 @@ namespace Soyo.SoyoRuntimeConsole
         /// </summary>
         protected ConsoleBase(ConsoleConfig consoleConfig)
         {
+            _key = consoleConfig.Key;
+
             if (consoleConfig.IsValid)
             {
                 // 直接换引用而非拷贝：避免额外的内存分配，调用方不应在构造后修改配置中的集合

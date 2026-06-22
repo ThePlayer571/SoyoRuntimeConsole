@@ -3,6 +3,10 @@
 ```
 
 Console Builder
+Vector系列可以命名
+处理空引用的方法
+
+string隐式转换CommandName，检查修改已有的api并修改
 
 ## 询问
 
@@ -29,6 +33,9 @@ Console Builder
 
 
 
+还存在一些不足
+本项目的规范是：公有成员必须使用[DisallowNull] / [AllowNull] / [NotNull] / [MaybeNull] 来处理空引用，不使用可空引用。你的代码中存在一些没有使用这些特性的成员
+    请你把这个规范写入CLAUDE.md，然后修改你刚刚写的代码
 
 
 

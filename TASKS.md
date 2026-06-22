@@ -78,10 +78,38 @@
 如果你想开个新的程序集来搞测试，你需要在计划末尾明确地指出，我手动创建。
 
 
-## 工作目标
+## 完成状态
 
-你需要把这个任务拆成若干个可验证成果的小任务，我计划分多个Context完成这个任务
+全部 6 个任务已完成（2026-06-22）。
 
-也就是说，你需要修改TASK.md文件（我已做好备份，放心修改）
+### 任务 1: Attribute 类 + PreferredParameterHandler 基础框架 ✅
+- `Runtime/ConsoleCommandAttribute.cs` — 3 个构造函数（无参/string/CommandName）
+- `Runtime/CommandParameterAttribute.cs` — 自定义参数名称
+- `Runtime/CommandHelpTextAttribute.cs` — 命令帮助文本
+- `Runtime/TargetConsoleKeyAttribute.cs` — ConsoleKey 作用域（类级+方法级）
+- `Runtime/ConsoleParameterHandlerAttribute.cs` — 参数处理器工厂标记
+- `Runtime/ParameterHandlers/PreferredParameterHandler.cs` — 全局单例，含所有内置 handler
+- `Tests/Editor/PreferredParameterHandlerTests.cs` — 17 个测试
 
-IMPORTANT: 你需要思考怎么分任务，以及用什么工作流，能最稳定可靠地完成这个任务
+### 任务 2: AttributeCommandDefinition + ConsoleAttributeScanner ✅
+- `Runtime/AttributeCommandDefinition.cs` — internal，包装 MethodInfo 为 ConsoleCommandDefinition
+- `Runtime/ConsoleAttributeScanner.cs` — ScanClass/ScanAssembly/ScanAllAssemblies，含程序集过滤和 TargetConsoleKey 过滤
+- `Tests/Editor/ConsoleAttributeScannerTests.cs` — 14 个测试
+
+### 任务 3: ConsoleParameterHandler 扫描注册 ✅
+- `Runtime/ParameterHandlers/MethodBackedTupleParameterHandler.cs` — TupleParameterHandler 的反射实现
+- `Runtime/ParameterHandlers/ConsoleParameterHandlerScanner.cs` — 扫描 [ConsoleParameterHandler] 并注册
+- `Runtime/ParameterHandlers/PreferredParameterHandler.cs` — 接入懒加载
+- `Tests/Editor/PreferredParameterHandlerTests.cs` — +3 个测试 + Point2D Fixture
+
+### 任务 4: ConsoleBuilder ✅
+- `Runtime/ConsoleBuilder.cs` — 流畅 Builder API（9 个链式方法 + 2 个构建方法）
+- `Tests/Editor/ConsoleBuilderTests.cs` — 15 个测试
+
+### 任务 5: Console.Create(ConsoleKey) 静态工厂 + ConsoleBase._key bug 修复 ✅
+- `Runtime/Console.cs` — 新增 Create(ConsoleKey) / Create(string) 工厂方法
+- `Runtime/ConsoleBase.cs` — 修复 `_key = consoleConfig.Key`
+- `Tests/Editor/ConsoleCreateTests.cs` — 7 个测试
+
+### 任务 6: 集成测试与边界场景 ✅
+- `Tests/Editor/IntegrationTests.cs` — 8 个测试（Vector3+Enum+数组端到端、重名命令、ref 警告、混合注册、多类型、多 Config 合并）

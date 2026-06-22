@@ -53,3 +53,25 @@ The core package lives under `Packages/com.github.theplayer571.soyo-runtime-cons
 | `ThePlayer571.SoyoRuntimeConsole`              | `Runtime/`      | Core library                                               |
 | `ThePlayer571.SoyoRuntimeConsole.Editor`       | `Editor/`       | Editor-only code (currently empty)                         |
 | `ThePlayer571.SoyoRuntimeConsole.Editor.Tests` | `Tests/Editor/` | Editor tests (NUnit, constrained to `UNITY_INCLUDE_TESTS`) |
+
+## Null-Handling Convention
+
+This project does **NOT** use C# nullable reference types (`#nullable`). Instead, all **public and protected members**
+must annotate nullability using these attributes from `System.Diagnostics.CodeAnalysis`:
+
+| Attribute | Usage |
+|-----------|-------|
+| `[DisallowNull]` | Input parameter/return value **must not** be null |
+| `[AllowNull]` | Input parameter **may** be null (even if the type is non-nullable) |
+| `[NotNull]` | Return value **will not** be null (even if the type is nullable) |
+| `[MaybeNull]` | Return value **may** be null (even if the type is non-nullable) |
+
+**Rules:**
+- Every public/protected method parameter and return value must have one of these attributes (unless the nullability
+  is obvious from context, such as `void` return or value-type parameters).
+- **Never** use `string?`, `T?` (on reference types), or any nullable reference type annotation (`?` on ref types).
+- Nullable **value types** (`int?`, `ConsoleKey?`, `bool?`) are fine — they are `Nullable<T>`, unrelated to the
+  nullable reference types feature.
+- Do **not** write runtime null checks for parameters already marked `[DisallowNull]` — let the CLR throw
+  `ArgumentNullException` or `NullReferenceException` naturally. The attribute serves as the documentation.
+- Private/internal members may use the same convention but it's less critical.
