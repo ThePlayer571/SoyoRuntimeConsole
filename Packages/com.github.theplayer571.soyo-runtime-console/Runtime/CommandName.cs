@@ -18,7 +18,6 @@ namespace Soyo.SoyoRuntimeConsole
 
             if (!IsSupportable(sanitizedName))
             {
-                Debug.LogWarning($"Command name '{name}' is not supportable after sanitization and will be treated as null.");
                 _name = null;
                 return;
             }
@@ -30,6 +29,9 @@ namespace Soyo.SoyoRuntimeConsole
         private const string NullName = "null";
 
         [NotNull] public string Name => _name ?? NullName;
+        public bool IsNullName => _name == null;
+        
+        
         private static readonly Regex UnsupportableCharRegex = new("[^a-zA-Z0-9_]");
 
         public static (string Result, bool Changed) RemoveUnsupportableChar([DisallowNull] string commandName)

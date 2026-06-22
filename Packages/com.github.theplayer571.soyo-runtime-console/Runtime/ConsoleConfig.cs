@@ -36,6 +36,12 @@ namespace Soyo.SoyoRuntimeConsole
                         continue;
                     }
 
+                    if (command.CommandName.IsNullName)
+                    {
+                        Debug.LogError($"Cannot add null name command '{command.GetType().FullName}'.");
+                        continue;
+                    }
+
                     if (commandDefinitionsList.Contains(command))
                     {
                         Debug.LogWarning($"Command '{command.CommandName}' is already added.");

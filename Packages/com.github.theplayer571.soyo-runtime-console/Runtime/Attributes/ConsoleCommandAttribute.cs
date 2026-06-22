@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using UnityEngine;
 
 namespace Soyo.SoyoRuntimeConsole.Attributes
 {
@@ -36,6 +37,10 @@ namespace Soyo.SoyoRuntimeConsole.Attributes
         public ConsoleCommandAttribute([DisallowNull] string name)
         {
             Name = new CommandName(name);
+            if (Name.Value.IsNullName)
+            {
+                Name = null;
+            }
         }
 
         /// <summary>
