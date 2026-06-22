@@ -153,11 +153,6 @@ namespace Soyo.SoyoRuntimeConsole
         private readonly IConsole _console;
         private readonly List<string> _history = new List<string>(10);
 
-
-        public ConsoleViewModel() : this(new GlobalConsole())
-        {
-        }
-
         public ConsoleViewModel([DisallowNull] IConsole console)
         {
             _console = console;

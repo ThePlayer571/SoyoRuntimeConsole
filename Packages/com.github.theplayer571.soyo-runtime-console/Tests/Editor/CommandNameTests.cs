@@ -8,26 +8,53 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void RemoveUnsupportableChar_RemovesNonWordChars()
         {
-            Assert.That(CommandName.RemoveUnsupportableChar("hello world"), Is.EqualTo("helloworld"));
-            Assert.That(CommandName.RemoveUnsupportableChar("test-123"), Is.EqualTo("test123"));
-            Assert.That(CommandName.RemoveUnsupportableChar("a.b.c"), Is.EqualTo("abc"));
-            Assert.That(CommandName.RemoveUnsupportableChar("foo!@#bar"), Is.EqualTo("foobar"));
-            Assert.That(CommandName.RemoveUnsupportableChar("hello\nworld"), Is.EqualTo("helloworld"));
+            var (result, changed) = CommandName.RemoveUnsupportableChar("hello world");
+            Assert.That(result, Is.EqualTo("helloworld"));
+            Assert.IsTrue(changed);
+
+            (result, changed) = CommandName.RemoveUnsupportableChar("test-123");
+            Assert.That(result, Is.EqualTo("test123"));
+            Assert.IsTrue(changed);
+
+            (result, changed) = CommandName.RemoveUnsupportableChar("a.b.c");
+            Assert.That(result, Is.EqualTo("abc"));
+            Assert.IsTrue(changed);
+
+            (result, changed) = CommandName.RemoveUnsupportableChar("foo!@#bar");
+            Assert.That(result, Is.EqualTo("foobar"));
+            Assert.IsTrue(changed);
+
+            (result, changed) = CommandName.RemoveUnsupportableChar("hello\nworld");
+            Assert.That(result, Is.EqualTo("helloworld"));
+            Assert.IsTrue(changed);
         }
 
         [Test]
         public void RemoveUnsupportableChar_KeepsValidChars()
         {
-            Assert.That(CommandName.RemoveUnsupportableChar("abc123"), Is.EqualTo("abc123"));
-            Assert.That(CommandName.RemoveUnsupportableChar("ABC_DEF"), Is.EqualTo("ABC_DEF"));
-            Assert.That(CommandName.RemoveUnsupportableChar("MyCommand_01"), Is.EqualTo("MyCommand_01"));
+            var (result, changed) = CommandName.RemoveUnsupportableChar("abc123");
+            Assert.That(result, Is.EqualTo("abc123"));
+            Assert.IsFalse(changed);
+
+            (result, changed) = CommandName.RemoveUnsupportableChar("ABC_DEF");
+            Assert.That(result, Is.EqualTo("ABC_DEF"));
+            Assert.IsFalse(changed);
+
+            (result, changed) = CommandName.RemoveUnsupportableChar("MyCommand_01");
+            Assert.That(result, Is.EqualTo("MyCommand_01"));
+            Assert.IsFalse(changed);
         }
 
         [Test]
         public void RemoveUnsupportableChar_AllInvalid_ReturnsEmpty()
         {
-            Assert.That(CommandName.RemoveUnsupportableChar("!@#$%"), Is.EqualTo(string.Empty));
-            Assert.That(CommandName.RemoveUnsupportableChar("   "), Is.EqualTo(string.Empty));
+            var (result, changed) = CommandName.RemoveUnsupportableChar("!@#$%");
+            Assert.That(result, Is.EqualTo(string.Empty));
+            Assert.IsTrue(changed);
+
+            (result, changed) = CommandName.RemoveUnsupportableChar("   ");
+            Assert.That(result, Is.EqualTo(string.Empty));
+            Assert.IsTrue(changed);
         }
 
         [Test]

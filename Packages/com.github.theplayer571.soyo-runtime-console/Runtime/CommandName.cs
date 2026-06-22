@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
+using UnityEngine;
 
 namespace Soyo.SoyoRuntimeConsole
 {
@@ -8,11 +9,21 @@ namespace Soyo.SoyoRuntimeConsole
     {
         public CommandName([DisallowNull] string name)
         {
-            _name = RemoveUnsupportableChar(name);
-            if (!IsSupportable(_name))
+            var (sanitizedName, changed) = RemoveUnsupportableChar(name);
+
+            if (changed)
             {
-                _name = null;
+                Debug.LogWarning($"Command name '{name}' contains unsupported characters and was sanitized to '{sanitizedName}'.");
             }
+
+            if (!IsSupportable(sanitizedName))
+            {
+                Debug.LogWarning($"Command name '{name}' is not supportable after sanitization and will be treated as null.");
+                _name = null;
+                return;
+            }
+
+            _name = sanitizedName;
         }
 
         private readonly string _name;
@@ -21,10 +32,13 @@ namespace Soyo.SoyoRuntimeConsole
         [NotNull] public string Name => _name ?? NullName;
         private static readonly Regex UnsupportableCharRegex = new("[^a-zA-Z0-9_]");
 
-        [return: NotNull]
-        public static string RemoveUnsupportableChar([DisallowNull] string commandName)
+        public static (string Result, bool Changed) RemoveUnsupportableChar([DisallowNull] string commandName)
         {
-            return UnsupportableCharRegex.Replace(commandName, string.Empty);
+            if (UnsupportableCharRegex.IsMatch(commandName))
+            {
+                return (UnsupportableCharRegex.Replace(commandName, string.Empty), true);
+            }
+            return (commandName, false);
         }
 
         public static bool IsSupportable([DisallowNull] string commandName)

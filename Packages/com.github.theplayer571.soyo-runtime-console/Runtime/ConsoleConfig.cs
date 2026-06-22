@@ -9,7 +9,7 @@ namespace Soyo.SoyoRuntimeConsole
     /// 控制台的配置结构，包含命令定义和命令帮助文本。
     /// 构造函数会对传入的数据进行校验，自动过滤 null 项和重复项。
     /// </summary>
-    public struct ConsoleConfig
+    public readonly struct ConsoleConfig
     {
         public bool IsValid { get; }
         public ConsoleKey Key { get; }
