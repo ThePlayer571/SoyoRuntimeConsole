@@ -2,9 +2,13 @@
 
 ```
 
-Console Builder
+参数handler可以指定括号类型
+
 Vector系列可以命名
-处理空引用的方法
+
+Color 和其他基本类型的handler
+
+PreferredParameterHandler注册逻辑，以及
 
 string隐式转换CommandName，检查修改已有的api并修改
 

@@ -10,6 +10,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
     /// <summary>
     /// <see cref="ConsoleBuilder"/> 的单元测试。
     /// </summary>
+    [TargetConsoleKey("Tests")]
     public class ConsoleBuilderTests
     {
         #region 测试用的命令和 Fixture
@@ -177,7 +178,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             s_wasCalled = false;
 
             var console = new ConsoleBuilder()
-                .SetConsoleKey("Test")
+                .SetConsoleKey("Tests")
                 .RegisterFromClass<ConsoleBuilderTests>()
                 .Build();
 

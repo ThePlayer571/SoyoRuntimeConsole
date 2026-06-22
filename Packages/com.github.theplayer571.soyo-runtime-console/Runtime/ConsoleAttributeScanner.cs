@@ -150,7 +150,13 @@ namespace Soyo.SoyoRuntimeConsole
             List<ConsoleCommandDefinition> commands,
             Dictionary<CommandName, string> helpTexts)
         {
-            // 1. 泛型方法检查 — 跳过
+            // 1. TargetConsoleKey 过滤 — 不匹配则静默跳过，避免为不相关的命令产生噪音 Warning
+            if (!PassesKeyFilter(method, targetKey))
+            {
+                return false;
+            }
+
+            // 2. 泛型方法检查 — 跳过
             if (method.IsGenericMethod)
             {
                 Debug.LogWarning(
@@ -159,7 +165,7 @@ namespace Soyo.SoyoRuntimeConsole
                 return false;
             }
 
-            // 2. 默认参数检查 — 警告但不跳过
+            // 3. 默认参数检查 — 警告但不跳过
             var parameters = method.GetParameters();
             if (parameters.Any(p => p.HasDefaultValue))
             {
@@ -168,7 +174,7 @@ namespace Soyo.SoyoRuntimeConsole
                     "Default parameters are not supported — use overloads instead.");
             }
 
-            // 3. ref / out 参数检查 — 警告
+            // 4. ref / out 参数检查 — 警告
             foreach (var param in parameters)
             {
                 if (param.ParameterType.IsByRef)
@@ -177,12 +183,6 @@ namespace Soyo.SoyoRuntimeConsole
                         $"[ConsoleCommand] '{method.DeclaringType!.FullName}.{method.Name}' " +
                         $"has ref/out parameter '{param.Name}', which may cause unexpected behavior.");
                 }
-            }
-
-            // 4. TargetConsoleKey 过滤
-            if (!PassesKeyFilter(method, targetKey))
-            {
-                return false;
             }
 
             // 5. 解析命令名

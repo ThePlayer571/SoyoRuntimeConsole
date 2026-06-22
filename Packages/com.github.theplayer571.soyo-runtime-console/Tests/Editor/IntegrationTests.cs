@@ -22,6 +22,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 
         #region 集成测试用的命令 Fixture
 
+        [TargetConsoleKey("Tests")]
         private static class ComplexParamFixture
         {
             public static Vector3 LastVector3 { get; set; }
@@ -41,6 +42,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             }
         }
 
+        [TargetConsoleKey("Tests")]
         private static class DuplicateNameFixture
         {
             public static string LastCalled { get; set; }
@@ -61,6 +63,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             }
         }
 
+        [TargetConsoleKey("Tests")]
         private static class RefParamFixture
         {
             [ConsoleCommand("itest_ref")]
@@ -69,6 +72,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             }
         }
 
+        [TargetConsoleKey("Tests")]
         private static class ManyTypesFixture
         {
             public static string LastResult { get; set; }
@@ -95,7 +99,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             var (commands, helpTexts) = ConsoleAttributeScanner.ScanClass(typeof(ComplexParamFixture));
             var config = new ConsoleConfig(new ConsoleKey("ITest"), commands, helpTexts.Select(kv => (kv.Key, kv.Value)));
             var console = new ConsoleBuilder()
-                .SetConsoleKey("ITest")
+                .SetConsoleKey("Tests")
                 .RegisterConsoleConfig(config)
                 .Build();
 
@@ -133,7 +137,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             var (commands, _) = ConsoleAttributeScanner.ScanClass(typeof(DuplicateNameFixture));
             var config = new ConsoleConfig(new ConsoleKey("ITest"), commands, null);
             var console = new ConsoleBuilder()
-                .SetConsoleKey("ITest")
+                .SetConsoleKey("Tests")
                 .RegisterConsoleConfig(config)
                 .Build();
 
@@ -184,7 +188,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             var manualCmd = new TestManualCommand("manual_mixed");
 
             var console = new ConsoleBuilder()
-                .SetConsoleKey("ITest")
+                .SetConsoleKey("Tests")
                 .RegisterCommand(manualCmd)
                 .RegisterFromClass(typeof(ManyTypesFixture))
                 .Build();
@@ -215,7 +219,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             var (commands, _) = ConsoleAttributeScanner.ScanClass(typeof(ManyTypesFixture));
             var config = new ConsoleConfig(new ConsoleKey("ITest"), commands, null);
             var console = new ConsoleBuilder()
-                .SetConsoleKey("ITest")
+                .SetConsoleKey("Tests")
                 .RegisterConsoleConfig(config)
                 .Build();
 

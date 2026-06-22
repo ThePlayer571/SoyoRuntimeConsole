@@ -161,6 +161,16 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
             // 懒加载：首次调用时扫描 [ConsoleParameterHandler]
             EnsureInitialized();
 
+            // 解引用 ref / out 参数类型（如 System.Int32& → System.Int32）
+            if (type.IsByRef)
+            {
+                var elementType = type.GetElementType();
+                if (elementType != null)
+                {
+                    type = elementType;
+                }
+            }
+
             var effectiveName = name ?? type.Name;
 
             // 1. 查找已注册的工厂

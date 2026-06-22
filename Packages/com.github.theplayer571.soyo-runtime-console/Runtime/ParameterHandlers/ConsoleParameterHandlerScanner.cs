@@ -95,7 +95,20 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
             Type targetType;
             if (!string.IsNullOrEmpty(attr.TypeName))
             {
+                // Type.GetType 仅在调用程序集和 mscorlib 中搜索，对于定义在其他程序集中的类型会返回 null。
+                // 作为兜底，当返回类型与指定的类型名匹配时，使用返回类型。
                 targetType = Type.GetType(attr.TypeName);
+                if (targetType == null)
+                {
+                    // 兜底：检查方法的返回类型是否与指定名称匹配
+                    var returnType = method.ReturnType;
+                    if (returnType != typeof(void) &&
+                        (returnType.Name == attr.TypeName || returnType.FullName == attr.TypeName))
+                    {
+                        targetType = returnType;
+                    }
+                }
+
                 if (targetType == null)
                 {
                     Debug.LogWarning(

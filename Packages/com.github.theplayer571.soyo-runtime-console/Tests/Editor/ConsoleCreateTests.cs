@@ -33,6 +33,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             }
         }
 
+        [TargetConsoleKey("Tests")]
         private static class GlobalGroup
         {
             [ConsoleCommand("cct_global_anytime")]
@@ -46,35 +47,30 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         #region 基本过滤
 
         [Test]
-        public void Create_ConsoleKey_Alpha_IncludesAlphaAndGlobal_ExcludesBeta()
+        public void Create_ConsoleKey_Alpha_IncludesAlphaExcludesBeta()
         {
             var console = Console.Create(new ConsoleKey("cct_alpha_key"));
 
             Assert.That(console.Commands.Any(c => c.CommandName.Name == "cct_alpha_only"), Is.True);
-            Assert.That(console.Commands.Any(c => c.CommandName.Name == "cct_global_anytime"), Is.True);
             Assert.That(console.Commands.Any(c => c.CommandName.Name == "cct_beta_only"), Is.False);
         }
 
         [Test]
-        public void Create_ConsoleKey_Beta_IncludesBetaAndGlobal_ExcludesAlpha()
+        public void Create_ConsoleKey_Beta_IncludesBetaExcludesAlpha()
         {
             var console = Console.Create(new ConsoleKey("cct_beta_key"));
 
             Assert.That(console.Commands.Any(c => c.CommandName.Name == "cct_beta_only"), Is.True);
-            Assert.That(console.Commands.Any(c => c.CommandName.Name == "cct_global_anytime"), Is.True);
             Assert.That(console.Commands.Any(c => c.CommandName.Name == "cct_alpha_only"), Is.False);
         }
 
         [Test]
-        public void Create_ConsoleKey_Nonexistent_OnlyGlobalCommands()
+        public void Create_ConsoleKey_Nonexistent_NoCommands()
         {
             var console = Console.Create(new ConsoleKey("cct_nonexistent_key"));
 
-            // 特定 key 的命令不会被包含
-            Assert.That(console.Commands.Any(c => c.CommandName.Name == "cct_alpha_only"), Is.False);
-            Assert.That(console.Commands.Any(c => c.CommandName.Name == "cct_beta_only"), Is.False);
-            // 全局命令仍然被包含
-            Assert.That(console.Commands.Any(c => c.CommandName.Name == "cct_global_anytime"), Is.True);
+            // 无匹配 key 的命令，也无全局命令
+            Assert.That(console.Commands.Count, Is.EqualTo(0));
         }
 
         #endregion

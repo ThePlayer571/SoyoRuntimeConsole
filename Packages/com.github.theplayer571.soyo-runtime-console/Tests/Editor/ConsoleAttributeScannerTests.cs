@@ -18,6 +18,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         /// <summary>
         /// 简单无参命令。
         /// </summary>
+        [TargetConsoleKey("Tests")]
         private static class SimpleCommandFixture
         {
             public static bool WasCalled { get; set; }
@@ -33,6 +34,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         /// <summary>
         /// 带参命令，覆盖 int, float, string, bool。
         /// </summary>
+        [TargetConsoleKey("Tests")]
         private static class ParameterCommandFixture
         {
             public static int LastIntValue { get; set; }
@@ -53,6 +55,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         /// <summary>
         /// 带 [CommandParameter] 自定义参数名的命令。
         /// </summary>
+        [TargetConsoleKey("Tests")]
         private static class CustomParamNameFixture
         {
             [ConsoleCommand("custom_param")]
@@ -104,6 +107,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         /// <summary>
         /// 带默认参数的命令（会触发警告）。
         /// </summary>
+        [TargetConsoleKey("Tests")]
         private static class DefaultParamFixture
         {
             [ConsoleCommand("default_param")]
@@ -115,6 +119,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         /// <summary>
         /// 泛型命令（会被跳过）。
         /// </summary>
+        [TargetConsoleKey("Tests")]
         private static class GenericMethodFixture
         {
             [ConsoleCommand("generic_cmd")]
