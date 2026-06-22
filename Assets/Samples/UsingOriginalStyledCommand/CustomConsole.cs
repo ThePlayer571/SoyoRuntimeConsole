@@ -14,8 +14,14 @@ namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand
             yield return new GreetCommand3();
         }
 
+        private static IEnumerable<(CommandName, string)> GetCommandHelpText()
+        {
+            yield return (new CommandName("quick_greet"), "A brief greet");
+            yield return (new CommandName("greet"), "greet with detailed config");
+        }
 
-        public CustomConsole() : base(new ConsoleConfig(new ConsoleKey(""), GetCommands(), null))
+
+        public CustomConsole() : base(new ConsoleConfig(new ConsoleKey(""), GetCommands(), GetCommandHelpText()))
         {
         }
     }
