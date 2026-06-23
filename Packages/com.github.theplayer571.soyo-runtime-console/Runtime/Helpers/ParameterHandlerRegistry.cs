@@ -1,4 +1,5 @@
 using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -23,6 +24,12 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
     /// <item><c>Vector3</c> → <see cref="Vector3ParameterHandler"/></item>
     /// <item><c>Vector3Int</c> → <see cref="Vector3IntParameterHandler"/></item>
     /// <item><c>Vector4</c> → <see cref="Vector4ParameterHandler"/></item>
+    /// <item><c>Rect</c> → <see cref="RectParameterHandler"/></item>
+    /// <item><c>RectInt</c> → <see cref="RectIntParameterHandler"/></item>
+    /// <item><c>Bounds</c> → <see cref="BoundsParameterHandler"/></item>
+    /// <item><c>BoundsInt</c> → <see cref="BoundsIntParameterHandler"/></item>
+    /// <item><c>Color</c> → <see cref="ColorParameterHandler"/></item>
+    /// <item><c>Guid</c> → <see cref="GuidParameterHandler"/></item>
     /// </list>
     /// <para>枚举类型和数组类型在运行时动态构造，无需手动注册。</para>
     /// <para>
@@ -108,6 +115,16 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             Register<Vector3>((_, name) => new Vector3ParameterHandler(name ?? "Vector3"));
             Register<Vector3Int>((_, name) => new Vector3IntParameterHandler(name ?? "Vector3Int"));
             Register<Vector4>((_, name) => new Vector4ParameterHandler(name ?? "Vector4"));
+
+            // Unity 几何/颜色类型
+            Register<Rect>((_, name) => new RectParameterHandler(name ?? "Rect"));
+            Register<RectInt>((_, name) => new RectIntParameterHandler(name ?? "RectInt"));
+            Register<Bounds>((_, name) => new BoundsParameterHandler(name ?? "Bounds"));
+            Register<BoundsInt>((_, name) => new BoundsIntParameterHandler(name ?? "BoundsInt"));
+            Register<Color>((_, name) => new ColorParameterHandler(name ?? "Color"));
+
+            // System 类型
+            Register<Guid>((_, name) => new GuidParameterHandler(name ?? "Guid"));
         }
 
         #endregion

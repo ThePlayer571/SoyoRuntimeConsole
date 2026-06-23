@@ -4,7 +4,6 @@
   
 新功能
   - Color 和其他基本类型的handler
-  - PreferredParameterHandler允许注册逻辑
 
 ## 文档
 

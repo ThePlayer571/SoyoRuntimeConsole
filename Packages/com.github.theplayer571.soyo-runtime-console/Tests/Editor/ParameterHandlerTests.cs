@@ -168,6 +168,51 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.IsFalse(handler.IsInitialized);
         }
 
+        [Test]
+        public void GuidParameterHandler()
+        {
+            var handler = new GuidParameterHandler("guid");
+
+            Assert.IsTrue(handler.IsInitialized);
+
+            // IsValid：标准 GUID 格式
+            Assert.IsTrue(handler.IsValid("12345678-1234-1234-1234-123456789abc"));
+            Assert.IsTrue(handler.IsValid("12345678-1234-1234-1234-123456789abc "));
+            Assert.IsTrue(handler.IsValid("{12345678-1234-1234-1234-123456789abc}"));
+            Assert.IsTrue(handler.IsValid("(12345678-1234-1234-1234-123456789abc)"));
+            Assert.IsTrue(handler.IsValid("00000000-0000-0000-0000-000000000000"));
+            // 无效输入
+            Assert.IsFalse(handler.IsValid("not-a-guid"));
+            Assert.IsFalse(handler.IsValid("hello"));
+            Assert.IsFalse(handler.IsValid(string.Empty));
+            Assert.IsFalse(handler.IsValid(null));
+
+            // ShouldAdvance：空格结尾即 advance
+            Assert.IsTrue(handler.ShouldAdvance("12345678-1234-1234-1234-123456789abc "));
+            Assert.IsFalse(handler.ShouldAdvance("12345678-1234-1234-1234-123456789abc"));
+            Assert.IsFalse(handler.ShouldAdvance(string.Empty));
+            Assert.IsFalse(handler.ShouldAdvance(null));
+
+            // Parse
+            var expectedGuid = System.Guid.Parse("12345678-1234-1234-1234-123456789abc");
+            var result = (System.Guid)handler.Parse("12345678-1234-1234-1234-123456789abc");
+            Assert.That(result, Is.EqualTo(expectedGuid));
+
+            // 带花括号的解析
+            var resultBrace = (System.Guid)handler.Parse("{12345678-1234-1234-1234-123456789abc}");
+            Assert.That(resultBrace, Is.EqualTo(expectedGuid));
+
+            // GetCandidates：空输入返回零 GUID 提示
+            Assert.That(handler.GetCandidates(string.Empty),
+                Contains.Item("00000000-0000-0000-0000-000000000000"));
+            // 非空输入无候选项
+            Assert.That(handler.GetCandidates("1"), Is.Empty);
+
+            // GetDescription
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("guid"));
+            Assert.That(handler.GetDescription().Type, Is.EqualTo("Guid"));
+        }
+
 
     }
 }

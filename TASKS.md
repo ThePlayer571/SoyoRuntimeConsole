@@ -1,24 +1,28 @@
 # TASKS.md
 
-我打算进行一个重构，涉及文件：
-- ConsoleBuilder
-- ConsoleAttributeScanner
-- ConsoleParameterHandlerScanner
-- PreferredParameterHandler
+添加几个内置ParameterHandler，大部分都是可以基于TupleHandler和CompositeHandler实现的 ✅ **已完成**
 
-## 痛点
+关于内置Handler，你可以参考例如Vector2Handler、Vector3Handler这些
 
-这是目前的痛点：
-1. PreferredParameterHandler性能问题
-  - PreferredParameterHandler设计上是全局的，因此初次使用会强制扫描所有程序集，导致性能问题
-  - 目前的设计让ConsoleBuilder没办法对它进行优化
-
-
-## 方案
-
-1. 将PreferredParameterHandler改为非全局的，改成一个可实例化的类（不是单例），ConsoleBuilder在构建时创建一个实例。
-  - 允许ConsoleBuilder按程序集/类型扫描参数。（api模仿ConsoleCommand的注册即可）
-    - 注意，这时候的扫描，指定扫描一个类时，会包括类的ConsoleCommand+ParameterHandler，也就是不单独分出一个api来
-    - 注意，你每次扫描，无法立即创建ConsoleCommand，因为ParameterHandler还没有扫描完。
-  - 此外，我在PreferredParameterHandler里留了一些todo注释，也是你需要做的
-2. 扫描出的结果不再缓存到全局。（逻辑是：既然使用Builder了，扫描一个程序集/类，不可能缺这点性能）
+清单：
+- [x] RectParameterHandler
+  - 支持： Rect(float x, float y, float width, float height);
+  - 支持： Rect(Vector2 position, Vector2 size);
+- [x] RectIntParameterHandler
+  - 支持： RectInt(int x, int y, int width, int height);
+  - 支持： RectInt(Vector2Int position, Vector2Int size);
+- [x] BoundsParameterHandler
+  - 支持： Bounds(float x, float y, float z, float width, float height, float depth);
+  - 支持： Bounds(Vector3 center, Vector3 size);
+- [x] BoundsIntParameterHandler
+  - 支持： BoundsInt(int x, int y, int z, int width, int height, int depth);
+  - 支持： BoundsInt(Vector3Int position, Vector3Int size);
+- [x] ColorParameterHandler
+  - 支持： Color(float r, float g, float b, float a);
+  - 支持： Color(float r, float g, float b); 认为a是1.0
+  - 支持： Color(int r, int g, int b, int a);
+  - 支持： Color(int r, int g, int b); 认为a是255
+  - 支持： Color(string hex);
+  - 支持： Color(string hex, float a); 认为a是1.0
+- [x] GuidParameterHandler
+  - 支持： Guid(string guid); （这个你就不能基于TupleHandler了）

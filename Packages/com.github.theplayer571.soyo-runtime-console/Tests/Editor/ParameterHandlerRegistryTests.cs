@@ -112,6 +112,66 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
                 "Vector4 handler should use the custom name passed via HandlerOf");
         }
 
+        [Test]
+        public void Handler_RectType_ReturnsRectParameterHandler()
+        {
+            var handler = _registry.HandlerOf<Rect>("rect");
+            Assert.That(handler, Is.InstanceOf<RectParameterHandler>());
+            Assert.IsTrue(handler.IsInitialized);
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("rect"),
+                "Rect handler should use the custom name passed via HandlerOf");
+        }
+
+        [Test]
+        public void Handler_RectIntType_ReturnsRectIntParameterHandler()
+        {
+            var handler = _registry.HandlerOf<RectInt>("rect");
+            Assert.That(handler, Is.InstanceOf<RectIntParameterHandler>());
+            Assert.IsTrue(handler.IsInitialized);
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("rect"),
+                "RectInt handler should use the custom name passed via HandlerOf");
+        }
+
+        [Test]
+        public void Handler_BoundsType_ReturnsBoundsParameterHandler()
+        {
+            var handler = _registry.HandlerOf<Bounds>("bounds");
+            Assert.That(handler, Is.InstanceOf<BoundsParameterHandler>());
+            Assert.IsTrue(handler.IsInitialized);
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("bounds"),
+                "Bounds handler should use the custom name passed via HandlerOf");
+        }
+
+        [Test]
+        public void Handler_BoundsIntType_ReturnsBoundsIntParameterHandler()
+        {
+            var handler = _registry.HandlerOf<BoundsInt>("bounds");
+            Assert.That(handler, Is.InstanceOf<BoundsIntParameterHandler>());
+            Assert.IsTrue(handler.IsInitialized);
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("bounds"),
+                "BoundsInt handler should use the custom name passed via HandlerOf");
+        }
+
+        [Test]
+        public void Handler_ColorType_ReturnsColorParameterHandler()
+        {
+            var handler = _registry.HandlerOf<Color>("color");
+            Assert.That(handler, Is.InstanceOf<ColorParameterHandler>());
+            Assert.IsTrue(handler.IsInitialized);
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("color"),
+                "Color handler should use the custom name passed via HandlerOf");
+        }
+
+        [Test]
+        public void Handler_GuidType_ReturnsGuidParameterHandler()
+        {
+            var handler = _registry.HandlerOf<System.Guid>("guid");
+            Assert.That(handler, Is.InstanceOf<GuidParameterHandler>());
+            Assert.IsTrue(handler.IsInitialized);
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("guid"),
+                "Guid handler should use the custom name passed via HandlerOf");
+        }
+
         #endregion
 
         #region 多工厂组合
