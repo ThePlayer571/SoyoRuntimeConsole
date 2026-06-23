@@ -11,6 +11,8 @@ parameter handler system.
 ## Build & Test
 
 - **Open in Unity**: The user opens the root folder as a Unity project (2022.3+).
+- **Test authorship**: **All tests are written by Claude (AI).** The user does not write tests — Claude is responsible
+  for writing, updating, and maintaining all test code.
 - **Run tests**: Tests are run **manually by the user** in the Unity Editor. Claude does NOT run tests — it has no
   Unity integration and cannot drive the Editor. The user opens **Window → General → Test Runner**, selects
   **EditMode**, and runs tests under `ThePlayer571.SoyoRuntimeConsole.Editor.Tests`. Tests are Editor-only (NUnit,
