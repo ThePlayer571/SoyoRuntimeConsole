@@ -1,4 +1,4 @@
-using System;
+using Soyo.SoyoRuntimeConsole.ValueObjects;
 
 namespace Soyo.SoyoRuntimeConsole.Attributes
 {
@@ -12,13 +12,18 @@ namespace Soyo.SoyoRuntimeConsole.Attributes
     /// 方法的参数列表定义了该 Handler 作为 <see cref="ParameterHandlers.TupleParameterHandler"/> 时的子参数结构，
     /// 方法体则作为 Parse 的实现（接收已解析的子参数，返回处理后的对象）。
     /// </remarks>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-    public sealed class ConsoleParameterHandlerAttribute : Attribute
+    [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    public sealed class ConsoleParameterHandlerAttribute : System.Attribute
     {
         /// <summary>
         /// Handler 处理的类型全名。为 null 时使用方法的返回类型。
         /// </summary>
         public string TypeName { get; }
+
+        /// <summary>
+        /// 括号类型。默认为 <see cref="BracketType.Braces"/>（花括号 {}）。
+        /// </summary>
+        public BracketType BracketType { get; set; } = BracketType.Braces;
 
         /// <summary>
         /// 无参构造。Handler 处理的类型将使用方法的返回类型。

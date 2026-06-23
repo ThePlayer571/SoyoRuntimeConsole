@@ -21,14 +21,16 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         /// </summary>
         /// <param name="name">处理器名称（用于提示）</param>
         /// <param name="type">处理器类型名（用于提示）</param>
+        /// <param name="bracketType">括号类型</param>
         /// <param name="method">目标静态方法，用于 Parse 时将子参数转换为返回值</param>
         /// <param name="subHandlers">子参数处理器列表</param>
         public MethodBackedTupleParameterHandler(
             string name,
             string type,
+            BracketType bracketType,
             MethodInfo method,
             IParameterHandler[] subHandlers)
-            : base(name, type, BracketType.Parentheses, subHandlers)
+            : base(name, type, bracketType, subHandlers)
         {
             _method = method;
         }

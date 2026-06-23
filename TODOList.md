@@ -3,7 +3,6 @@
 ```
   
 新功能
-  - 参数handler可以指定括号类型
   - Vector系列可以命名
   - Color 和其他基本类型的handler
   - PreferredParameterHandler允许注册逻辑

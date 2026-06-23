@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reflection;
 using Soyo.SoyoRuntimeConsole.Attributes;
 using Soyo.SoyoRuntimeConsole.ParameterHandlers;
+using Soyo.SoyoRuntimeConsole.ValueObjects;
 using UnityEngine;
 
 namespace Soyo.SoyoRuntimeConsole.Helpers
@@ -146,8 +147,9 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             }
 
             // 注册工厂到给定的 registry
+            var bracketType = attr.BracketType;
             registry.Register(targetType, (requestedType, name) =>
-                CreateHandler(method, targetType, name, registry));
+                CreateHandler(method, targetType, bracketType, name, registry));
         }
 
         /// <summary>
@@ -156,6 +158,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         private static IParameterHandler CreateHandler(
             MethodInfo method,
             Type targetType,
+            BracketType bracketType,
             string name,
             ParameterHandlerRegistry registry)
         {
@@ -170,7 +173,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
 
             var effectiveName = name ?? targetType.Name;
             return new MethodBackedTupleParameterHandler(
-                effectiveName, targetType.Name, method, subHandlers);
+                effectiveName, targetType.Name, bracketType, method, subHandlers);
         }
 
         /// <summary>

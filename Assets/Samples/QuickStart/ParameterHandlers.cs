@@ -1,6 +1,7 @@
 using System;
 using Soyo.SoyoRuntimeConsole.Attributes;
 using Soyo.SoyoRuntimeConsole.Samples.QuickStart.ValueObjects;
+using Soyo.SoyoRuntimeConsole.ValueObjects;
 
 namespace Soyo.SoyoRuntimeConsole.Samples.QuickStart
 {
@@ -8,7 +9,7 @@ namespace Soyo.SoyoRuntimeConsole.Samples.QuickStart
     public static class ParameterHandlers
     {
         // 定义参数处理器
-        [ConsoleParameterHandler("GreetConfig")]
+        [ConsoleParameterHandler("GreetConfig", BracketType = BracketType.Braces)]
         public static GreetConfig GreetConfigHandler( // 函数名无所谓
             GreetStyle style,
             string[] words)

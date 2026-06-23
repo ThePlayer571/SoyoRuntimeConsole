@@ -306,9 +306,10 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             var handler = _registry.HandlerOf<Point2D>("point");
 
             // Point2D 的 [ConsoleParameterHandler] 接受 (int x, int y)，返回 Point2D
-            Assert.IsTrue(handler.IsValid("(10, 20)"));
+            // 默认括号类型为花括号 {}
+            Assert.IsTrue(handler.IsValid("{10, 20}"));
 
-            var result = handler.Parse("(10, 20)");
+            var result = handler.Parse("{10, 20}");
             Assert.That(result, Is.InstanceOf<Point2D>());
 
             var point = (Point2D)result!;
@@ -325,9 +326,9 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             var handler = _registry.HandlerOf<Point2D>("point");
 
             // 只有一个子参数时非法
-            Assert.IsFalse(handler.IsValid("(10)"));
+            Assert.IsFalse(handler.IsValid("{10}"));
             // 三个子参数时非法
-            Assert.IsFalse(handler.IsValid("(10, 20, 30)"));
+            Assert.IsFalse(handler.IsValid("{10, 20, 30}"));
         }
 
         #endregion
