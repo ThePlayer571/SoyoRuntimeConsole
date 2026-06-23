@@ -174,7 +174,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Vector2ParameterHandler()
         {
-            var handler = new Vector2ParameterHandler();
+            var handler = new Vector2ParameterHandler("vector2");
 
             Assert.IsTrue(handler.IsInitialized);
 
@@ -218,7 +218,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Vector3ParameterHandler()
         {
-            var handler = new Vector3ParameterHandler();
+            var handler = new Vector3ParameterHandler("vector3");
 
             Assert.IsTrue(handler.IsInitialized);
 
@@ -258,7 +258,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Vector4ParameterHandler()
         {
-            var handler = new Vector4ParameterHandler();
+            var handler = new Vector4ParameterHandler("vector4");
 
             Assert.IsTrue(handler.IsInitialized);
 
@@ -300,7 +300,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Vector2IntParameterHandler()
         {
-            var handler = new Vector2IntParameterHandler();
+            var handler = new Vector2IntParameterHandler("vector2int");
 
             Assert.IsTrue(handler.IsInitialized);
 
@@ -341,7 +341,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Vector3IntParameterHandler()
         {
-            var handler = new Vector3IntParameterHandler();
+            var handler = new Vector3IntParameterHandler("vector3int");
 
             Assert.IsTrue(handler.IsInitialized);
 
@@ -427,7 +427,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
                 new TestTupleHandler("vec2", "Vector2Int", BracketType.Parentheses,
                     new IntegerParameterHandler("x"),
                     new IntegerParameterHandler("y")),
-                new Vector3IntParameterHandler());
+                new Vector3IntParameterHandler("vector3int"));
 
             Assert.IsTrue(handler.IsInitialized);
 

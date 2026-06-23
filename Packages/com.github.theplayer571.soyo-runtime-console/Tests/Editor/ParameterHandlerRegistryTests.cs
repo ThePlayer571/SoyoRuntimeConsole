@@ -68,6 +68,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             var handler = _registry.HandlerOf<Vector2>("pos");
             Assert.That(handler, Is.InstanceOf<Vector2ParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("pos"),
+                "Vector2 handler should use the custom name passed via HandlerOf");
         }
 
         [Test]
@@ -76,6 +78,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             var handler = _registry.HandlerOf<Vector2Int>("pos");
             Assert.That(handler, Is.InstanceOf<Vector2IntParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("pos"),
+                "Vector2Int handler should use the custom name passed via HandlerOf");
         }
 
         [Test]
@@ -84,6 +88,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             var handler = _registry.HandlerOf<Vector3>("pos");
             Assert.That(handler, Is.InstanceOf<Vector3ParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("pos"),
+                "Vector3 handler should use the custom name passed via HandlerOf");
         }
 
         [Test]
@@ -92,6 +98,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             var handler = _registry.HandlerOf<Vector3Int>("pos");
             Assert.That(handler, Is.InstanceOf<Vector3IntParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("pos"),
+                "Vector3Int handler should use the custom name passed via HandlerOf");
         }
 
         [Test]
@@ -100,6 +108,8 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             var handler = _registry.HandlerOf<Vector4>("pos");
             Assert.That(handler, Is.InstanceOf<Vector4ParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
+            Assert.That(handler.GetDescription().Name, Is.EqualTo("pos"),
+                "Vector4 handler should use the custom name passed via HandlerOf");
         }
 
         #endregion

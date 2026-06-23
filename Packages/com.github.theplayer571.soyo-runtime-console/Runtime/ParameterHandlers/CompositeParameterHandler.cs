@@ -17,7 +17,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
     /// <code>
     /// new CompositeParameterHandler("vec", "Vector3Int",
     ///     new IntegerParameterHandler("x"),
-    ///     new Vector3IntParameterHandler())
+    ///     new Vector3IntParameterHandler("vector3int"))
     /// </code>
     /// 此时输入 "1" 会匹配 IntegerParameterHandler（解析为 int），
     /// 输入 "(1, 2, 3)" 会匹配 Vector3IntParameterHandler（解析为 Vector3Int）。

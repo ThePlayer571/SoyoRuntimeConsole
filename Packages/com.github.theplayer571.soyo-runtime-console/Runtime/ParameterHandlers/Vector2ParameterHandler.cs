@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Soyo.SoyoRuntimeConsole.ValueObjects;
 using UnityEngine;
 
@@ -17,8 +18,9 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         /// 构造 <see cref="Vector2"/> 参数处理器。
         /// 内部使用两个 <see cref="FloatParameterHandler"/> 分别处理 x 和 y 分量。
         /// </summary>
-        public Vector2ParameterHandler()
-            : base("vector2", "Vector2", BracketType.Parentheses,
+        /// <param name="name">参数名称（用于提示）</param>
+        public Vector2ParameterHandler([DisallowNull] string name)
+            : base(name, "Vector2", BracketType.Parentheses,
                 new FloatParameterHandler("x"),
                 new FloatParameterHandler("y"))
         {

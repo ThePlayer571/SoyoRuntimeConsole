@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Soyo.SoyoRuntimeConsole.ValueObjects;
 using UnityEngine;
 
@@ -17,8 +18,9 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         /// 构造 <see cref="Vector3"/> 参数处理器。
         /// 内部使用三个 <see cref="FloatParameterHandler"/> 分别处理 x、y、z 分量。
         /// </summary>
-        public Vector3ParameterHandler()
-            : base("vector3", "Vector3", BracketType.Parentheses,
+        /// <param name="name">参数名称（用于提示）</param>
+        public Vector3ParameterHandler([DisallowNull] string name)
+            : base(name, "Vector3", BracketType.Parentheses,
                 new FloatParameterHandler("x"),
                 new FloatParameterHandler("y"),
                 new FloatParameterHandler("z"))

@@ -82,12 +82,12 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             Register<float>((_, name) => new FloatParameterHandler(name ?? "Float"));
             Register<bool>((_, name) => new BooleanParameterHandler(name ?? "Boolean"));
 
-            // Unity 数学类型 — 无参构造，忽略 name
-            Register<Vector2>((_, _) => new Vector2ParameterHandler());
-            Register<Vector2Int>((_, _) => new Vector2IntParameterHandler());
-            Register<Vector3>((_, _) => new Vector3ParameterHandler());
-            Register<Vector3Int>((_, _) => new Vector3IntParameterHandler());
-            Register<Vector4>((_, _) => new Vector4ParameterHandler());
+            // Unity 数学类型 — type 固定，name 可自定义
+            Register<Vector2>((_, name) => new Vector2ParameterHandler(name ?? "Vector2"));
+            Register<Vector2Int>((_, name) => new Vector2IntParameterHandler(name ?? "Vector2Int"));
+            Register<Vector3>((_, name) => new Vector3ParameterHandler(name ?? "Vector3"));
+            Register<Vector3Int>((_, name) => new Vector3IntParameterHandler(name ?? "Vector3Int"));
+            Register<Vector4>((_, name) => new Vector4ParameterHandler(name ?? "Vector4"));
         }
 
         #endregion
