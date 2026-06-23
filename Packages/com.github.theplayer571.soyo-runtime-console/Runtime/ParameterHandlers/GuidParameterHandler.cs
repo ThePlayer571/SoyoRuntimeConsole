@@ -58,14 +58,96 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         /// <inheritdoc />
         /// <remarks>
         /// 空输入时返回零 GUID 字符串作为提示。
-        /// 其他情况不提供候选项，因为 GUID 是任意字符串无法自动补全。
+        /// 部分输入时，将用户输入的合法字符覆盖到零 GUID 字符串对应位置，剩余部分
+        /// 保持为零，提供完整的 GUID 预览，让用户在输入过程中始终能看到补全结果。
+        /// 支持花括号 <c>{}</c> / 圆括号 <c>()</c> 包裹格式，自动补全闭括号。
+        /// 按零 GUID 模板逐位校验：连字符位置必须为 <c>-</c>，数字位置必须为
+        /// 十六进制数字。格式不匹配时不提供候选项。
         /// </remarks>
         public override IEnumerable<string> GetCandidates(string parameter)
         {
             if (string.IsNullOrEmpty(parameter))
             {
                 yield return ZeroGuidString;
+                yield break;
             }
+
+            var trimmed = parameter.Trim();
+
+            // 检测并剥离开括号
+            var hasOpenBrace = trimmed.Length > 0 && trimmed[0] == '{';
+            var hasOpenParen = trimmed.Length > 0 && trimmed[0] == '(';
+
+            if (hasOpenBrace || hasOpenParen)
+            {
+                trimmed = trimmed.Substring(1);
+            }
+
+            // 剥离闭括号（如果用户已输入）
+            if (trimmed.Length > 0 && trimmed[trimmed.Length - 1] == '}')
+            {
+                trimmed = trimmed.Substring(0, trimmed.Length - 1);
+            }
+            else if (trimmed.Length > 0 && trimmed[trimmed.Length - 1] == ')')
+            {
+                trimmed = trimmed.Substring(0, trimmed.Length - 1);
+            }
+
+            // 超过标准 GUID 长度（36 字符）不提供候选项
+            if (trimmed.Length > ZeroGuidString.Length)
+            {
+                yield break;
+            }
+
+            // 按零 GUID 模板逐位校验：连字符位置必须为 '-'，数字位置必须为十六进制数字
+            for (var i = 0; i < trimmed.Length; i++)
+            {
+                var inputChar = trimmed[i];
+                if (ZeroGuidString[i] == '-')
+                {
+                    if (inputChar != '-')
+                    {
+                        yield break;
+                    }
+                }
+                else
+                {
+                    if (!IsHexDigit(inputChar))
+                    {
+                        yield break;
+                    }
+                }
+            }
+
+            // 将用户输入覆盖到 ZeroGuidString 上
+            var chars = ZeroGuidString.ToCharArray();
+            for (var i = 0; i < trimmed.Length; i++)
+            {
+                chars[i] = trimmed[i];
+            }
+            var padded = new string(chars);
+
+            // 补回括号包裹（自动补全闭括号）
+            if (hasOpenBrace)
+            {
+                padded = '{' + padded + '}';
+            }
+            else if (hasOpenParen)
+            {
+                padded = '(' + padded + ')';
+            }
+
+            yield return padded;
+        }
+
+        /// <summary>
+        /// 判断字符是否为合法十六进制数字（<c>0-9</c>、<c>a-f</c>、<c>A-F</c>）。
+        /// </summary>
+        private static bool IsHexDigit(char c)
+        {
+            return (c >= '0' && c <= '9')
+                   || (c >= 'a' && c <= 'f')
+                   || (c >= 'A' && c <= 'F');
         }
     }
 }

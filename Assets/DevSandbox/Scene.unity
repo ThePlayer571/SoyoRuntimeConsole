@@ -284,14 +284,16 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: 'CompletionState: TypingParameters
-
-    CandidateCommands: none
-
-    Candidates:
-    none
-
-'
+  m_Text: "CompletionState: TypingParameters\r\nCandidateCommands: \r\n - \u27171
+    test <value: Boolean> - \r\n - \u27171 test <value: Integer> - \r\n - \u27171
+    test <value: Float> - \r\n - \u27171 test <value: Guid> - \r\n - \u27171 test
+    <value: Vector2> - \r\n - \u27171 test <value: Vector2Int> - \r\n - \u27171 test
+    <value: Vector3> - \r\n - \u27171 test <value: Vector3Int> - \r\n - \u27171 test
+    <value: Vector4> - \r\n - \u27171 test <value: Rect> - \r\n - \u27171 test <value:
+    RectInt> - \r\n - \u27171 test <value: Bounds> - \r\n - \u27171 test <value:
+    BoundsInt> - \r\n - \u27171 test <value: Color> - \r\n - \u27171 test <value:
+    TestEnum> - \r\n - \u27171 test <value: Integer[]> - \r\n - \u27171 test <value:
+    String[]> - \r\n - \u27131 test <value: String> - \r\nCandidates: 00111111-3132-123d-123d-123dc0000000\r\n"
 --- !u!222 &838812662
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -523,7 +525,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c92ece660938454e91b11516fff81bd0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  input: 'test '
+  input: test 00111111-3132-123d-123d-123dc
   suggestionText: {fileID: 838812661}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

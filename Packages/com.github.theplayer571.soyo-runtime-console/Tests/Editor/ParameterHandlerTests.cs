@@ -205,8 +205,33 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             // GetCandidates：空输入返回零 GUID 提示
             Assert.That(handler.GetCandidates(string.Empty),
                 Contains.Item("00000000-0000-0000-0000-000000000000"));
-            // 非空输入无候选项
-            Assert.That(handler.GetCandidates("1"), Is.Empty);
+            // 部分输入叠加到零 GUID 上，剩余补零
+            Assert.That(handler.GetCandidates("1"),
+                Contains.Item("10000000-0000-0000-0000-000000000000"));
+            Assert.That(handler.GetCandidates("12345678"),
+                Contains.Item("12345678-0000-0000-0000-000000000000"));
+            Assert.That(handler.GetCandidates("12345678-1234"),
+                Contains.Item("12345678-1234-0000-0000-000000000000"));
+            Assert.That(handler.GetCandidates("a"),
+                Contains.Item("a0000000-0000-0000-0000-000000000000"));
+            // 花括号自动补全闭括号
+            Assert.That(handler.GetCandidates("{1"),
+                Contains.Item("{10000000-0000-0000-0000-000000000000}"));
+            // 圆括号自动补全闭括号
+            Assert.That(handler.GetCandidates("(1"),
+                Contains.Item("(10000000-0000-0000-0000-000000000000)"));
+            // 已完成完整 GUID 不变
+            Assert.That(handler.GetCandidates("12345678-1234-1234-1234-123456789abc"),
+                Contains.Item("12345678-1234-1234-1234-123456789abc"));
+            // 超过标准 GUID 长度不产生候选项
+            Assert.That(handler.GetCandidates("132039c1-3232-cdff-123d-321231234312162397710341"), Is.Empty);
+            // 连字符位置不正确不产生候选项
+            Assert.That(handler.GetCandidates("00000000-0000-0000-0000-0000000000-1"), Is.Empty);
+            Assert.That(handler.GetCandidates("00000000-0000-0000-0000----"), Is.Empty);
+            Assert.That(handler.GetCandidates("00000000-0000-0000-0000-00000000000-"), Is.Empty);
+            // 无效字符不产生候选项
+            Assert.That(handler.GetCandidates("g"), Is.Empty);
+            Assert.That(handler.GetCandidates("1g"), Is.Empty);
 
             // GetDescription
             Assert.That(handler.GetDescription().Name, Is.EqualTo("guid"));

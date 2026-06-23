@@ -385,32 +385,32 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.IsTrue(handler.IsInitialized);
 
             // IsValid — 4-float 格式
-            Assert.IsTrue(handler.IsValid("(1.0, 2.0, 3.0, 4.0)"));
-            Assert.IsTrue(handler.IsValid("(1.0, 2.0, 3.0, 4.0) "));
-            Assert.IsFalse(handler.IsValid("(1.0, 2.0, 3.0)"));
-            Assert.IsFalse(handler.IsValid("(1.0, 2.0, 3.0, 4.0, 5.0)"));
-            Assert.IsFalse(handler.IsValid("(abc, 2.0, 3.0, 4.0)"));
+            Assert.IsTrue(handler.IsValid("{1.0, 2.0, 3.0, 4.0}"));
+            Assert.IsTrue(handler.IsValid("{1.0, 2.0, 3.0, 4.0} "));
+            Assert.IsFalse(handler.IsValid("{1.0, 2.0, 3.0}"));
+            Assert.IsFalse(handler.IsValid("{1.0, 2.0, 3.0, 4.0, 5.0}"));
+            Assert.IsFalse(handler.IsValid("{abc, 2.0, 3.0, 4.0}"));
             // IsValid — 2-Vector2 格式
-            Assert.IsTrue(handler.IsValid("((1.0, 2.0), (3.0, 4.0))"));
-            Assert.IsTrue(handler.IsValid("((1.0, 2.0), (3.0, 4.0)) "));
-            Assert.IsFalse(handler.IsValid("((1.0, 2.0))"));
-            Assert.IsFalse(handler.IsValid("((1.0, 2.0), (3.0, 4.0), (5.0, 6.0))"));
+            Assert.IsTrue(handler.IsValid("{(1.0, 2.0), (3.0, 4.0)}"));
+            Assert.IsTrue(handler.IsValid("{(1.0, 2.0), (3.0, 4.0)} "));
+            Assert.IsFalse(handler.IsValid("{(1.0, 2.0)}"));
+            Assert.IsFalse(handler.IsValid("{(1.0, 2.0), (3.0, 4.0), (5.0, 6.0)}"));
 
             // ShouldAdvance
-            Assert.IsFalse(handler.ShouldAdvance("(1.0, 2.0, 3.0, 4.0)"));
-            Assert.IsTrue(handler.ShouldAdvance("(1.0, 2.0, 3.0, 4.0) "));
-            Assert.IsFalse(handler.ShouldAdvance("((1.0, 2.0), (3.0, 4.0))"));
-            Assert.IsTrue(handler.ShouldAdvance("((1.0, 2.0), (3.0, 4.0)) "));
+            Assert.IsFalse(handler.ShouldAdvance("{1.0, 2.0, 3.0, 4.0}"));
+            Assert.IsTrue(handler.ShouldAdvance("{1.0, 2.0, 3.0, 4.0} "));
+            Assert.IsFalse(handler.ShouldAdvance("{(1.0, 2.0), (3.0, 4.0)}"));
+            Assert.IsTrue(handler.ShouldAdvance("{(1.0, 2.0), (3.0, 4.0)} "));
 
             // Parse — 4-float 格式
-            var resultFloat = (Rect)handler.Parse("(1.0, 2.0, 3.0, 4.0)");
+            var resultFloat = (Rect)handler.Parse("{1.0, 2.0, 3.0, 4.0}");
             Assert.That(resultFloat.x, Is.EqualTo(1.0f).Within(1e-6f));
             Assert.That(resultFloat.y, Is.EqualTo(2.0f).Within(1e-6f));
             Assert.That(resultFloat.width, Is.EqualTo(3.0f).Within(1e-6f));
             Assert.That(resultFloat.height, Is.EqualTo(4.0f).Within(1e-6f));
 
             // Parse — 2-Vector2 格式
-            var resultVec = (Rect)handler.Parse("((1.0, 2.0), (3.0, 4.0))");
+            var resultVec = (Rect)handler.Parse("{(1.0, 2.0), (3.0, 4.0)}");
             Assert.That(resultVec.x, Is.EqualTo(1.0f).Within(1e-6f));
             Assert.That(resultVec.y, Is.EqualTo(2.0f).Within(1e-6f));
             Assert.That(resultVec.width, Is.EqualTo(3.0f).Within(1e-6f));
@@ -418,13 +418,13 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 
             // GetCandidates：复合处理器会合并两种格式的候选项（含去重）
             Assert.That(handler.GetCandidates(string.Empty),
-                Is.EquivalentTo(new[] { "(", "(0, 0, 0, 0)", "((0, 0), (0, 0))" }));
-            Assert.That(handler.GetCandidates("("), Contains.Item("(0"));
-            Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0,"),
-                Contains.Item("(1.0, 2.0, 3.0, 0"));
-            Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0, 4.0"),
-                Contains.Item("(1.0, 2.0, 3.0, 4.0)"));
-            Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0, 4.0,"), Is.Empty);
+                Is.EquivalentTo(new[] { "{", "{0, 0, 0, 0}", "{(0, 0), (0, 0)}" }));
+            Assert.That(handler.GetCandidates("{"), Contains.Item("{0"));
+            Assert.That(handler.GetCandidates("{1.0, 2.0, 3.0,"),
+                Contains.Item("{1.0, 2.0, 3.0, 0"));
+            Assert.That(handler.GetCandidates("{1.0, 2.0, 3.0, 4.0"),
+                Contains.Item("{1.0, 2.0, 3.0, 4.0}"));
+            Assert.That(handler.GetCandidates("{1.0, 2.0, 3.0, 4.0,"), Is.Empty);
             // 输入完全不成立（不以开括号开头）→ 无候选项
             Assert.That(handler.GetCandidates("1"), Is.Empty);
 
@@ -441,32 +441,32 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.IsTrue(handler.IsInitialized);
 
             // IsValid — 4-int 格式
-            Assert.IsTrue(handler.IsValid("(1, 2, 3, 4)"));
-            Assert.IsTrue(handler.IsValid("(1, 2, 3, 4) "));
-            Assert.IsFalse(handler.IsValid("(1, 2, 3)"));
-            Assert.IsFalse(handler.IsValid("(1, 2, 3, 4, 5)"));
-            Assert.IsFalse(handler.IsValid("(1.5, 2, 3, 4)"));
+            Assert.IsTrue(handler.IsValid("{1, 2, 3, 4}"));
+            Assert.IsTrue(handler.IsValid("{1, 2, 3, 4} "));
+            Assert.IsFalse(handler.IsValid("{1, 2, 3}"));
+            Assert.IsFalse(handler.IsValid("{1, 2, 3, 4, 5}"));
+            Assert.IsFalse(handler.IsValid("{1.5, 2, 3, 4}"));
             // IsValid — 2-Vector2Int 格式
-            Assert.IsTrue(handler.IsValid("((1, 2), (3, 4))"));
-            Assert.IsTrue(handler.IsValid("((1, 2), (3, 4)) "));
-            Assert.IsFalse(handler.IsValid("((1, 2))"));
-            Assert.IsFalse(handler.IsValid("((1, 2), (3, 4), (5, 6))"));
+            Assert.IsTrue(handler.IsValid("{(1, 2), (3, 4)}"));
+            Assert.IsTrue(handler.IsValid("{(1, 2), (3, 4)} "));
+            Assert.IsFalse(handler.IsValid("{(1, 2)}"));
+            Assert.IsFalse(handler.IsValid("{(1, 2), (3, 4), (5, 6)}"));
 
             // ShouldAdvance
-            Assert.IsFalse(handler.ShouldAdvance("(1, 2, 3, 4)"));
-            Assert.IsTrue(handler.ShouldAdvance("(1, 2, 3, 4) "));
-            Assert.IsFalse(handler.ShouldAdvance("((1, 2), (3, 4))"));
-            Assert.IsTrue(handler.ShouldAdvance("((1, 2), (3, 4)) "));
+            Assert.IsFalse(handler.ShouldAdvance("{1, 2, 3, 4}"));
+            Assert.IsTrue(handler.ShouldAdvance("{1, 2, 3, 4} "));
+            Assert.IsFalse(handler.ShouldAdvance("{(1, 2), (3, 4)}"));
+            Assert.IsTrue(handler.ShouldAdvance("{(1, 2), (3, 4)} "));
 
             // Parse — 4-int 格式
-            var resultInt = (RectInt)handler.Parse("(1, 2, 3, 4)");
+            var resultInt = (RectInt)handler.Parse("{1, 2, 3, 4}");
             Assert.That(resultInt.x, Is.EqualTo(1));
             Assert.That(resultInt.y, Is.EqualTo(2));
             Assert.That(resultInt.width, Is.EqualTo(3));
             Assert.That(resultInt.height, Is.EqualTo(4));
 
             // Parse — 2-Vector2Int 格式
-            var resultVec = (RectInt)handler.Parse("((1, 2), (3, 4))");
+            var resultVec = (RectInt)handler.Parse("{(1, 2), (3, 4)}");
             Assert.That(resultVec.x, Is.EqualTo(1));
             Assert.That(resultVec.y, Is.EqualTo(2));
             Assert.That(resultVec.width, Is.EqualTo(3));
@@ -474,13 +474,13 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 
             // GetCandidates：复合处理器会合并两种格式的候选项（含去重）
             Assert.That(handler.GetCandidates(string.Empty),
-                Is.EquivalentTo(new[] { "(", "(0, 0, 0, 0)", "((0, 0), (0, 0))" }));
-            Assert.That(handler.GetCandidates("("), Contains.Item("(0"));
-            Assert.That(handler.GetCandidates("(1, 2, 3,"),
-                Contains.Item("(1, 2, 3, 0"));
-            Assert.That(handler.GetCandidates("(1, 2, 3, 4"),
-                Contains.Item("(1, 2, 3, 4)"));
-            Assert.That(handler.GetCandidates("(1, 2, 3, 4,"), Is.Empty);
+                Is.EquivalentTo(new[] { "{", "{0, 0, 0, 0}", "{(0, 0), (0, 0)}" }));
+            Assert.That(handler.GetCandidates("{"), Contains.Item("{0"));
+            Assert.That(handler.GetCandidates("{1, 2, 3,"),
+                Contains.Item("{1, 2, 3, 0"));
+            Assert.That(handler.GetCandidates("{1, 2, 3, 4"),
+                Contains.Item("{1, 2, 3, 4}"));
+            Assert.That(handler.GetCandidates("{1, 2, 3, 4,"), Is.Empty);
             // 输入完全不成立（不以开括号开头）→ 无候选项
             Assert.That(handler.GetCandidates("1"), Is.Empty);
 
@@ -497,25 +497,25 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.IsTrue(handler.IsInitialized);
 
             // IsValid — 6-float 格式
-            Assert.IsTrue(handler.IsValid("(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)"));
-            Assert.IsTrue(handler.IsValid("(1.0, 2.0, 3.0, 4.0, 5.0, 6.0) "));
-            Assert.IsFalse(handler.IsValid("(1.0, 2.0, 3.0, 4.0, 5.0)"));
-            Assert.IsFalse(handler.IsValid("(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0)"));
-            Assert.IsFalse(handler.IsValid("(abc, 2.0, 3.0, 4.0, 5.0, 6.0)"));
+            Assert.IsTrue(handler.IsValid("{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}"));
+            Assert.IsTrue(handler.IsValid("{1.0, 2.0, 3.0, 4.0, 5.0, 6.0} "));
+            Assert.IsFalse(handler.IsValid("{1.0, 2.0, 3.0, 4.0, 5.0}"));
+            Assert.IsFalse(handler.IsValid("{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0}"));
+            Assert.IsFalse(handler.IsValid("{abc, 2.0, 3.0, 4.0, 5.0, 6.0}"));
             // IsValid — 2-Vector3 格式
-            Assert.IsTrue(handler.IsValid("((1.0, 2.0, 3.0), (4.0, 5.0, 6.0))"));
-            Assert.IsTrue(handler.IsValid("((1.0, 2.0, 3.0), (4.0, 5.0, 6.0)) "));
-            Assert.IsFalse(handler.IsValid("((1.0, 2.0, 3.0))"));
-            Assert.IsFalse(handler.IsValid("((1.0, 2.0, 3.0), (4.0, 5.0, 6.0), (7.0, 8.0, 9.0))"));
+            Assert.IsTrue(handler.IsValid("{(1.0, 2.0, 3.0), (4.0, 5.0, 6.0)}"));
+            Assert.IsTrue(handler.IsValid("{(1.0, 2.0, 3.0), (4.0, 5.0, 6.0)} "));
+            Assert.IsFalse(handler.IsValid("{(1.0, 2.0, 3.0)}"));
+            Assert.IsFalse(handler.IsValid("{(1.0, 2.0, 3.0), (4.0, 5.0, 6.0), (7.0, 8.0, 9.0)}"));
 
             // ShouldAdvance
-            Assert.IsFalse(handler.ShouldAdvance("(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)"));
-            Assert.IsTrue(handler.ShouldAdvance("(1.0, 2.0, 3.0, 4.0, 5.0, 6.0) "));
-            Assert.IsFalse(handler.ShouldAdvance("((1.0, 2.0, 3.0), (4.0, 5.0, 6.0))"));
-            Assert.IsTrue(handler.ShouldAdvance("((1.0, 2.0, 3.0), (4.0, 5.0, 6.0)) "));
+            Assert.IsFalse(handler.ShouldAdvance("{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}"));
+            Assert.IsTrue(handler.ShouldAdvance("{1.0, 2.0, 3.0, 4.0, 5.0, 6.0} "));
+            Assert.IsFalse(handler.ShouldAdvance("{(1.0, 2.0, 3.0), (4.0, 5.0, 6.0)}"));
+            Assert.IsTrue(handler.ShouldAdvance("{(1.0, 2.0, 3.0), (4.0, 5.0, 6.0)} "));
 
             // Parse — 6-float 格式
-            var resultFloat = (Bounds)handler.Parse("(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)");
+            var resultFloat = (Bounds)handler.Parse("{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}");
             Assert.That(resultFloat.center.x, Is.EqualTo(1.0f).Within(1e-6f));
             Assert.That(resultFloat.center.y, Is.EqualTo(2.0f).Within(1e-6f));
             Assert.That(resultFloat.center.z, Is.EqualTo(3.0f).Within(1e-6f));
@@ -524,7 +524,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(resultFloat.size.z, Is.EqualTo(6.0f).Within(1e-6f));
 
             // Parse — 2-Vector3 格式
-            var resultVec = (Bounds)handler.Parse("((1.0, 2.0, 3.0), (4.0, 5.0, 6.0))");
+            var resultVec = (Bounds)handler.Parse("{(1.0, 2.0, 3.0), (4.0, 5.0, 6.0)}");
             Assert.That(resultVec.center.x, Is.EqualTo(1.0f).Within(1e-6f));
             Assert.That(resultVec.center.y, Is.EqualTo(2.0f).Within(1e-6f));
             Assert.That(resultVec.center.z, Is.EqualTo(3.0f).Within(1e-6f));
@@ -534,13 +534,13 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 
             // GetCandidates：复合处理器会合并两种格式的候选项（含去重）
             Assert.That(handler.GetCandidates(string.Empty),
-                Is.EquivalentTo(new[] { "(", "(0, 0, 0, 0, 0, 0)", "((0, 0, 0), (0, 0, 0))" }));
-            Assert.That(handler.GetCandidates("("), Contains.Item("(0"));
-            Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0, 4.0, 5.0,"),
-                Contains.Item("(1.0, 2.0, 3.0, 4.0, 5.0, 0"));
-            Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0, 4.0, 5.0, 6.0"),
-                Contains.Item("(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)"));
-            Assert.That(handler.GetCandidates("(1.0, 2.0, 3.0, 4.0, 5.0, 6.0,"), Is.Empty);
+                Is.EquivalentTo(new[] { "{", "{0, 0, 0, 0, 0, 0}", "{(0, 0, 0), (0, 0, 0)}" }));
+            Assert.That(handler.GetCandidates("{"), Contains.Item("{0"));
+            Assert.That(handler.GetCandidates("{1.0, 2.0, 3.0, 4.0, 5.0,"),
+                Contains.Item("{1.0, 2.0, 3.0, 4.0, 5.0, 0"));
+            Assert.That(handler.GetCandidates("{1.0, 2.0, 3.0, 4.0, 5.0, 6.0"),
+                Contains.Item("{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}"));
+            Assert.That(handler.GetCandidates("{1.0, 2.0, 3.0, 4.0, 5.0, 6.0,"), Is.Empty);
             // 输入完全不成立（不以开括号开头）→ 无候选项
             Assert.That(handler.GetCandidates("1"), Is.Empty);
 
@@ -557,25 +557,25 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.IsTrue(handler.IsInitialized);
 
             // IsValid — 6-int 格式
-            Assert.IsTrue(handler.IsValid("(1, 2, 3, 4, 5, 6)"));
-            Assert.IsTrue(handler.IsValid("(1, 2, 3, 4, 5, 6) "));
-            Assert.IsFalse(handler.IsValid("(1, 2, 3, 4, 5)"));
-            Assert.IsFalse(handler.IsValid("(1, 2, 3, 4, 5, 6, 7)"));
-            Assert.IsFalse(handler.IsValid("(1.5, 2, 3, 4, 5, 6)"));
+            Assert.IsTrue(handler.IsValid("{1, 2, 3, 4, 5, 6}"));
+            Assert.IsTrue(handler.IsValid("{1, 2, 3, 4, 5, 6} "));
+            Assert.IsFalse(handler.IsValid("{1, 2, 3, 4, 5}"));
+            Assert.IsFalse(handler.IsValid("{1, 2, 3, 4, 5, 6, 7}"));
+            Assert.IsFalse(handler.IsValid("{1.5, 2, 3, 4, 5, 6}"));
             // IsValid — 2-Vector3Int 格式
-            Assert.IsTrue(handler.IsValid("((1, 2, 3), (4, 5, 6))"));
-            Assert.IsTrue(handler.IsValid("((1, 2, 3), (4, 5, 6)) "));
-            Assert.IsFalse(handler.IsValid("((1, 2, 3))"));
-            Assert.IsFalse(handler.IsValid("((1, 2, 3), (4, 5, 6), (7, 8, 9))"));
+            Assert.IsTrue(handler.IsValid("{(1, 2, 3), (4, 5, 6)}"));
+            Assert.IsTrue(handler.IsValid("{(1, 2, 3), (4, 5, 6)} "));
+            Assert.IsFalse(handler.IsValid("{(1, 2, 3)}"));
+            Assert.IsFalse(handler.IsValid("{(1, 2, 3), (4, 5, 6), (7, 8, 9)}"));
 
             // ShouldAdvance
-            Assert.IsFalse(handler.ShouldAdvance("(1, 2, 3, 4, 5, 6)"));
-            Assert.IsTrue(handler.ShouldAdvance("(1, 2, 3, 4, 5, 6) "));
-            Assert.IsFalse(handler.ShouldAdvance("((1, 2, 3), (4, 5, 6))"));
-            Assert.IsTrue(handler.ShouldAdvance("((1, 2, 3), (4, 5, 6)) "));
+            Assert.IsFalse(handler.ShouldAdvance("{1, 2, 3, 4, 5, 6}"));
+            Assert.IsTrue(handler.ShouldAdvance("{1, 2, 3, 4, 5, 6} "));
+            Assert.IsFalse(handler.ShouldAdvance("{(1, 2, 3), (4, 5, 6)}"));
+            Assert.IsTrue(handler.ShouldAdvance("{(1, 2, 3), (4, 5, 6)} "));
 
             // Parse — 6-int 格式
-            var resultInt = (BoundsInt)handler.Parse("(1, 2, 3, 4, 5, 6)");
+            var resultInt = (BoundsInt)handler.Parse("{1, 2, 3, 4, 5, 6}");
             Assert.That(resultInt.x, Is.EqualTo(1));
             Assert.That(resultInt.y, Is.EqualTo(2));
             Assert.That(resultInt.z, Is.EqualTo(3));
@@ -584,7 +584,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(resultInt.size.z, Is.EqualTo(6));
 
             // Parse — 2-Vector3Int 格式
-            var resultVec = (BoundsInt)handler.Parse("((1, 2, 3), (4, 5, 6))");
+            var resultVec = (BoundsInt)handler.Parse("{(1, 2, 3), (4, 5, 6)}");
             Assert.That(resultVec.x, Is.EqualTo(1));
             Assert.That(resultVec.y, Is.EqualTo(2));
             Assert.That(resultVec.z, Is.EqualTo(3));
@@ -594,13 +594,13 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 
             // GetCandidates：复合处理器会合并两种格式的候选项（含去重）
             Assert.That(handler.GetCandidates(string.Empty),
-                Is.EquivalentTo(new[] { "(", "(0, 0, 0, 0, 0, 0)", "((0, 0, 0), (0, 0, 0))" }));
-            Assert.That(handler.GetCandidates("("), Contains.Item("(0"));
-            Assert.That(handler.GetCandidates("(1, 2, 3, 4, 5,"),
-                Contains.Item("(1, 2, 3, 4, 5, 0"));
-            Assert.That(handler.GetCandidates("(1, 2, 3, 4, 5, 6"),
-                Contains.Item("(1, 2, 3, 4, 5, 6)"));
-            Assert.That(handler.GetCandidates("(1, 2, 3, 4, 5, 6,"), Is.Empty);
+                Is.EquivalentTo(new[] { "{", "{0, 0, 0, 0, 0, 0}", "{(0, 0, 0), (0, 0, 0)}" }));
+            Assert.That(handler.GetCandidates("{"), Contains.Item("{0"));
+            Assert.That(handler.GetCandidates("{1, 2, 3, 4, 5,"),
+                Contains.Item("{1, 2, 3, 4, 5, 0"));
+            Assert.That(handler.GetCandidates("{1, 2, 3, 4, 5, 6"),
+                Contains.Item("{1, 2, 3, 4, 5, 6}"));
+            Assert.That(handler.GetCandidates("{1, 2, 3, 4, 5, 6,"), Is.Empty);
             // 输入完全不成立（不以开括号开头）→ 无候选项
             Assert.That(handler.GetCandidates("1"), Is.Empty);
 
@@ -624,35 +624,35 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.IsFalse(handler.IsValid("#GGG"));
             Assert.IsFalse(handler.IsValid("not-a-color"));
             // IsValid — 十六进制 + alpha 格式
-            Assert.IsTrue(handler.IsValid("(#FF0000, 0.5)"));
-            Assert.IsTrue(handler.IsValid("(#00FF00, 1.0) "));
-            Assert.IsFalse(handler.IsValid("(#FF0000)"));
-            Assert.IsFalse(handler.IsValid("(#FF0000, 0.5, extra)"));
+            Assert.IsTrue(handler.IsValid("{#FF0000, 0.5}"));
+            Assert.IsTrue(handler.IsValid("{#00FF00, 1.0} "));
+            Assert.IsFalse(handler.IsValid("{#FF0000}"));
+            Assert.IsFalse(handler.IsValid("{#FF0000, 0.5, extra}"));
             // IsValid — 4-float 格式
-            Assert.IsTrue(handler.IsValid("(0.5, 0.2, 0.3, 1.0)"));
-            Assert.IsTrue(handler.IsValid("(0.5, 0.2, 0.3, 1.0) "));
-            Assert.IsFalse(handler.IsValid("(0.5, 0.2)"));
-            Assert.IsFalse(handler.IsValid("(0.5, 0.2, 0.3, 1.0, 0.0)"));
-            Assert.IsFalse(handler.IsValid("(abc, 0.2, 0.3, 1.0)"));
+            Assert.IsTrue(handler.IsValid("{0.5, 0.2, 0.3, 1.0}"));
+            Assert.IsTrue(handler.IsValid("{0.5, 0.2, 0.3, 1.0} "));
+            Assert.IsFalse(handler.IsValid("{0.5, 0.2}"));
+            Assert.IsFalse(handler.IsValid("{0.5, 0.2, 0.3, 1.0, 0.0}"));
+            Assert.IsFalse(handler.IsValid("{abc, 0.2, 0.3, 1.0}"));
             // IsValid — 3-float 格式
-            Assert.IsTrue(handler.IsValid("(0.5, 0.2, 0.3)"));
-            Assert.IsTrue(handler.IsValid("(0.0, 0.0, 0.0) "));
-            Assert.IsFalse(handler.IsValid("(0.5, 0.2)"));
-            Assert.IsFalse(handler.IsValid("(0.5, 0.2, 0.3, 1.0, 0.0)"));
+            Assert.IsTrue(handler.IsValid("{0.5, 0.2, 0.3}"));
+            Assert.IsTrue(handler.IsValid("{0.0, 0.0, 0.0} "));
+            Assert.IsFalse(handler.IsValid("{0.5, 0.2}"));
+            Assert.IsFalse(handler.IsValid("{0.5, 0.2, 0.3, 1.0, 0.0}"));
             // IsValid — 字节范围（由浮点处理器接受，自动检测）
-            Assert.IsTrue(handler.IsValid("(128, 0, 0, 255)"));
-            Assert.IsTrue(handler.IsValid("(128, 0, 0)"));
-            Assert.IsFalse(handler.IsValid("(128, 0)"));
+            Assert.IsTrue(handler.IsValid("{128, 0, 0, 255}"));
+            Assert.IsTrue(handler.IsValid("{128, 0, 0}"));
+            Assert.IsFalse(handler.IsValid("{128, 0}"));
 
             // ShouldAdvance
             Assert.IsTrue(handler.ShouldAdvance("#FF0000 "));
             Assert.IsFalse(handler.ShouldAdvance("#FF0000"));
-            Assert.IsTrue(handler.ShouldAdvance("(0.5, 0.2, 0.3, 1.0) "));
-            Assert.IsFalse(handler.ShouldAdvance("(0.5, 0.2, 0.3, 1.0)"));
-            Assert.IsTrue(handler.ShouldAdvance("(0.5, 0.2, 0.3) "));
-            Assert.IsFalse(handler.ShouldAdvance("(0.5, 0.2, 0.3)"));
-            Assert.IsTrue(handler.ShouldAdvance("(#FF0000, 0.5) "));
-            Assert.IsFalse(handler.ShouldAdvance("(#FF0000, 0.5)"));
+            Assert.IsTrue(handler.ShouldAdvance("{0.5, 0.2, 0.3, 1.0} "));
+            Assert.IsFalse(handler.ShouldAdvance("{0.5, 0.2, 0.3, 1.0}"));
+            Assert.IsTrue(handler.ShouldAdvance("{0.5, 0.2, 0.3} "));
+            Assert.IsFalse(handler.ShouldAdvance("{0.5, 0.2, 0.3}"));
+            Assert.IsTrue(handler.ShouldAdvance("{#FF0000, 0.5} "));
+            Assert.IsFalse(handler.ShouldAdvance("{#FF0000, 0.5}"));
 
             // Parse — 十六进制格式
             var hexResult = (Color)handler.Parse("#FF0000");
@@ -662,56 +662,69 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(hexResult.a, Is.EqualTo(1.0f).Within(0.01f));
 
             // Parse — 十六进制 + alpha 格式
-            var hexAlphaResult = (Color)handler.Parse("(#FF0000, 0.5)");
+            var hexAlphaResult = (Color)handler.Parse("{#FF0000, 0.5}");
             Assert.That(hexAlphaResult.r, Is.EqualTo(1.0f).Within(0.01f));
             Assert.That(hexAlphaResult.g, Is.EqualTo(0.0f).Within(0.01f));
             Assert.That(hexAlphaResult.b, Is.EqualTo(0.0f).Within(0.01f));
             Assert.That(hexAlphaResult.a, Is.EqualTo(0.5f).Within(1e-6f));
 
             // Parse — 4-float 格式
-            var float4Result = (Color)handler.Parse("(0.5, 0.2, 0.3, 0.8)");
+            var float4Result = (Color)handler.Parse("{0.5, 0.2, 0.3, 0.8}");
             Assert.That(float4Result.r, Is.EqualTo(0.5f).Within(1e-6f));
             Assert.That(float4Result.g, Is.EqualTo(0.2f).Within(1e-6f));
             Assert.That(float4Result.b, Is.EqualTo(0.3f).Within(1e-6f));
             Assert.That(float4Result.a, Is.EqualTo(0.8f).Within(1e-6f));
 
             // Parse — 3-float 格式（a 默认为 1.0）
-            var float3Result = (Color)handler.Parse("(0.5, 0.2, 0.3)");
+            var float3Result = (Color)handler.Parse("{0.5, 0.2, 0.3}");
             Assert.That(float3Result.r, Is.EqualTo(0.5f).Within(1e-6f));
             Assert.That(float3Result.g, Is.EqualTo(0.2f).Within(1e-6f));
             Assert.That(float3Result.b, Is.EqualTo(0.3f).Within(1e-6f));
             Assert.That(float3Result.a, Is.EqualTo(1.0f).Within(1e-6f));
 
             // Parse — 4-int 字节范围格式（128/255 ≈ 0.502）
-            var intResult = (Color)handler.Parse("(128, 0, 0, 255)");
+            var intResult = (Color)handler.Parse("{128, 0, 0, 255}");
             Assert.That(intResult.r, Is.EqualTo(128f / 255f).Within(1e-6f));
             Assert.That(intResult.g, Is.EqualTo(0.0f).Within(1e-6f));
             Assert.That(intResult.b, Is.EqualTo(0.0f).Within(1e-6f));
             Assert.That(intResult.a, Is.EqualTo(1.0f).Within(1e-6f));
 
             // Parse — 3-int 字节范围格式（a 默认为 1.0）
-            var int3Result = (Color)handler.Parse("(128, 0, 0)");
+            var int3Result = (Color)handler.Parse("{128, 0, 0}");
             Assert.That(int3Result.r, Is.EqualTo(128f / 255f).Within(1e-6f));
             Assert.That(int3Result.g, Is.EqualTo(0.0f).Within(1e-6f));
             Assert.That(int3Result.b, Is.EqualTo(0.0f).Within(1e-6f));
             Assert.That(int3Result.a, Is.EqualTo(1.0f).Within(1e-6f));
 
-            // Parse — 边界情况：(1, 0, 0) 所有值 ≤ 1.0，不走字节范围缩放
-            var boundaryResult = (Color)handler.Parse("(1, 0, 0)");
+            // Parse — 边界情况：{1, 0, 0} 所有值 ≤ 1.0，不走字节范围缩放
+            var boundaryResult = (Color)handler.Parse("{1, 0, 0}");
             Assert.That(boundaryResult.r, Is.EqualTo(1.0f).Within(1e-6f));
             Assert.That(boundaryResult.g, Is.EqualTo(0.0f).Within(1e-6f));
             Assert.That(boundaryResult.b, Is.EqualTo(0.0f).Within(1e-6f));
 
             // GetCandidates：空输入合并所有子处理器候选项（含去重）
             var candidates = handler.GetCandidates(string.Empty).ToList();
-            // 十六进制候选项
-            Assert.That(candidates, Contains.Item("#"));
-            // 元组候选项（括弧前缀，及各格式的一键填充结果）
-            Assert.That(candidates, Contains.Item("("));
-            Assert.That(candidates, Contains.Item("(0, 0, 0, 0)"));
-            Assert.That(candidates, Contains.Item("(0, 0, 0)"));
+            // 十六进制候选项（#000000 代替之前的单独 #）
+            Assert.That(candidates, Contains.Item("#000000"));
+            // 元组候选项（花括号前缀，及各格式的一键填充结果）
+            Assert.That(candidates, Contains.Item("{"));
+            Assert.That(candidates, Contains.Item("{0, 0, 0, 0}"));
+            Assert.That(candidates, Contains.Item("{0, 0, 0}"));
             // 十六进制 + alpha 格式的一键填充
-            Assert.That(candidates, Contains.Item("(#, 0)"));
+            Assert.That(candidates, Contains.Item("{#000000, 0}"));
+
+            // GetCandidates — 十六进制格式的渐进补全
+            Assert.That(handler.GetCandidates("#"), Contains.Item("#000000"));
+            Assert.That(handler.GetCandidates("#F"), Contains.Item("#F00000"));
+            Assert.That(handler.GetCandidates("#FF"), Contains.Item("#FF0000"));
+            Assert.That(handler.GetCandidates("#FF0000"), Contains.Item("#FF0000"));
+            // 无 # 前缀不触发候选项（避免纯数字等被误识别为颜色）
+            Assert.That(handler.GetCandidates("FF"), Is.Empty);
+            Assert.That(handler.GetCandidates("327312"), Is.Empty);
+            Assert.That(handler.GetCandidates("#FF0000F"), Contains.Item("#FF0000F0"));
+            Assert.That(handler.GetCandidates("#FF0000FF"), Contains.Item("#FF0000FF"));
+            // 无效字符不产生候选项
+            Assert.That(handler.GetCandidates("#GGG"), Is.Empty);
 
             // GetDescription
             Assert.That(handler.GetDescription().Name, Is.EqualTo("color"));

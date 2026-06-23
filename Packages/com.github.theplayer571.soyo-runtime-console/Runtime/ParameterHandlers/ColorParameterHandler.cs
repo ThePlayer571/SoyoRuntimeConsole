@@ -157,12 +157,61 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
             }
 
             /// <inheritdoc />
+            /// <remarks>
+            /// 空输入时返回 <c>#000000</c> 作为完整提示（而非仅 <c>#</c>）。
+            /// 非空输入必须以 <c>#</c> 开头才提供候选项，避免纯数字等
+            /// 合法十六进制字符串被误识别为颜色。
+            /// 部分输入时，将用户输入的十六进制字符补零到 6 位或 8 位，
+            /// 始终返回带 <c>#</c> 前缀的完整颜色预览。
+            /// 输入包含非法字符时不提供候选项。
+            /// </remarks>
             public override IEnumerable<string> GetCandidates(string parameter)
             {
-                if (string.IsNullOrEmpty(parameter))
+                var input = parameter ?? string.Empty;
+
+                // 非空输入必须以 # 开头才生成候选项
+                if (input.Length > 0 && !input.StartsWith("#"))
                 {
-                    yield return "#";
+                    yield break;
                 }
+
+                var hexPart = input.StartsWith("#") ? input.Substring(1) : input;
+
+                // 验证所有字符为合法十六进制数字
+                foreach (var c in hexPart)
+                {
+                    if (!IsHexDigit(c))
+                    {
+                        yield break;
+                    }
+                }
+
+                // 确定目标补齐长度：≤6 补到 6，7-8 补到 8，>8 不补
+                string padded;
+                if (hexPart.Length <= 6)
+                {
+                    padded = hexPart.PadRight(6, '0');
+                }
+                else if (hexPart.Length <= 8)
+                {
+                    padded = hexPart.PadRight(8, '0');
+                }
+                else
+                {
+                    padded = hexPart;
+                }
+
+                yield return "#" + padded;
+            }
+
+            /// <summary>
+            /// 判断字符是否为合法十六进制数字（<c>0-9</c>、<c>a-f</c>、<c>A-F</c>）。
+            /// </summary>
+            private static bool IsHexDigit(char c)
+            {
+                return (c >= '0' && c <= '9')
+                       || (c >= 'a' && c <= 'f')
+                       || (c >= 'A' && c <= 'F');
             }
         }
 
