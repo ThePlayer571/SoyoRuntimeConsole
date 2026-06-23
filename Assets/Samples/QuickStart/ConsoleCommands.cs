@@ -40,23 +40,5 @@ namespace Soyo.SoyoRuntimeConsole.Samples.QuickStart
         {
             Debug.Log("Hello");
         }
-
-        // 定义参数处理器
-        [ConsoleParameterHandler("GreetConfig")]
-        public static GreetConfig GreetConfigHandler( // 函数名无所谓
-            GreetStyle style,
-            string[] words)
-        {
-            return new GreetConfig(style, words);
-        }
-
-        // 可以省略
-        [ConsoleParameterHandler]
-        public static GreetStyle GreetStyleHandler(
-            GreetTone tone,
-            bool withHandShake)
-        {
-            return new GreetStyle(tone, withHandShake);
-        }
     }
 }

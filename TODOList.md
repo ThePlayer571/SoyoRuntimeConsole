@@ -2,6 +2,12 @@
 
 ```
 
+Sample 构造方式重载
+
+ParameterHandler限制只搜索类/程序集
+
+看一遍新生成的代码
+
 参数handler可以指定括号类型
 
 Vector系列可以命名
