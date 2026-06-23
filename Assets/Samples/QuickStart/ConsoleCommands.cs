@@ -18,8 +18,8 @@ namespace Soyo.SoyoRuntimeConsole.Samples.QuickStart
         // 可以省略参数名称指定
         [ConsoleCommand("greet")]
         public static void greet(
-            [CommandParameter] GreetStyle style, // 等价于 [CommandParameter("style")] GreetStyle style
-            [CommandParameter] string[] words)
+            [CommandParameter] GreetStyle style, // 等价于 [CommandParameter("style")]
+            string[] words) // 也可以不加[CommandParameter]
         {
             greet(new GreetConfig(style, words));
         }

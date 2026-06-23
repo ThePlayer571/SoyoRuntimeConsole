@@ -33,7 +33,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         private sealed class RectFloat4Handler : TupleParameterHandler
         {
             public RectFloat4Handler([DisallowNull] string name)
-                : base(name, "Rect", BracketType.Parentheses,
+                : base(name, "Rect", BracketType.Braces,
                     new FloatParameterHandler("x"),
                     new FloatParameterHandler("y"),
                     new FloatParameterHandler("width"),
@@ -55,7 +55,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         private sealed class RectVector2Handler : TupleParameterHandler
         {
             public RectVector2Handler([DisallowNull] string name)
-                : base(name, "Rect", BracketType.Parentheses,
+                : base(name, "Rect", BracketType.Braces,
                     new Vector2ParameterHandler("position"),
                     new Vector2ParameterHandler("size"))
             {

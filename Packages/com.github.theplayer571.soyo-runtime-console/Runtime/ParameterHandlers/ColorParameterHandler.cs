@@ -172,7 +172,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         private sealed class ColorHexAlphaHandler : TupleParameterHandler
         {
             public ColorHexAlphaHandler([DisallowNull] string name)
-                : base(name, "Color", BracketType.Parentheses,
+                : base(name, "Color", BracketType.Braces,
                     new ColorHexHandler("hex"),
                     new FloatParameterHandler("alpha"))
             {
@@ -194,7 +194,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         private sealed class ColorFloat4Handler : TupleParameterHandler
         {
             public ColorFloat4Handler([DisallowNull] string name)
-                : base(name, "Color", BracketType.Parentheses,
+                : base(name, "Color", BracketType.Braces,
                     new FloatParameterHandler("r"),
                     new FloatParameterHandler("g"),
                     new FloatParameterHandler("b"),
@@ -218,7 +218,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         private sealed class ColorFloat3Handler : TupleParameterHandler
         {
             public ColorFloat3Handler([DisallowNull] string name)
-                : base(name, "Color", BracketType.Parentheses,
+                : base(name, "Color", BracketType.Braces,
                     new FloatParameterHandler("r"),
                     new FloatParameterHandler("g"),
                     new FloatParameterHandler("b"))

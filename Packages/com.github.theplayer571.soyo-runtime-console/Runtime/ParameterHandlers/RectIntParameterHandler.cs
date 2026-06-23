@@ -33,7 +33,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         private sealed class RectIntInt4Handler : TupleParameterHandler
         {
             public RectIntInt4Handler([DisallowNull] string name)
-                : base(name, "RectInt", BracketType.Parentheses,
+                : base(name, "RectInt", BracketType.Braces,
                     new IntegerParameterHandler("x"),
                     new IntegerParameterHandler("y"),
                     new IntegerParameterHandler("width"),
@@ -55,7 +55,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         private sealed class RectIntVector2IntHandler : TupleParameterHandler
         {
             public RectIntVector2IntHandler([DisallowNull] string name)
-                : base(name, "RectInt", BracketType.Parentheses,
+                : base(name, "RectInt", BracketType.Braces,
                     new Vector2IntParameterHandler("position"),
                     new Vector2IntParameterHandler("size"))
             {

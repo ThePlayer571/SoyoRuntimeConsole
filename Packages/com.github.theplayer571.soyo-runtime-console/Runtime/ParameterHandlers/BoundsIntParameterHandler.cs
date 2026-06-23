@@ -33,7 +33,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         private sealed class BoundsIntInt6Handler : TupleParameterHandler
         {
             public BoundsIntInt6Handler([DisallowNull] string name)
-                : base(name, "BoundsInt", BracketType.Parentheses,
+                : base(name, "BoundsInt", BracketType.Braces,
                     new IntegerParameterHandler("x"),
                     new IntegerParameterHandler("y"),
                     new IntegerParameterHandler("z"),
@@ -59,7 +59,7 @@ namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
         private sealed class BoundsIntVector3IntHandler : TupleParameterHandler
         {
             public BoundsIntVector3IntHandler([DisallowNull] string name)
-                : base(name, "BoundsInt", BracketType.Parentheses,
+                : base(name, "BoundsInt", BracketType.Braces,
                     new Vector3IntParameterHandler("position"),
                     new Vector3IntParameterHandler("size"))
             {

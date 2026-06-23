@@ -284,10 +284,14 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "CompletionState: TypingCommandName\r\nCandidateCommands: \r\n - \u27170
-    greet <config: GreetConfig> - \r\n - \u27170 greet <style: GreetStyle> <words:
-    String[]> - \r\n - \u27170 greet <tone: GreetTone> <withHandShake: Boolean> <words:
-    String[]> - \r\n - \u27170 quick_greet - \r\nCandidates: greet || quick_greet\r\n"
+  m_Text: 'CompletionState: TypingParameters
+
+    CandidateCommands: none
+
+    Candidates:
+    none
+
+'
 --- !u!222 &838812662
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -516,10 +520,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1946079551}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e810ca8a1bc14f6e97bb0cd97de3abb9, type: 3}
+  m_Script: {fileID: 11500000, guid: c92ece660938454e91b11516fff81bd0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  input: 
+  input: 'test '
   suggestionText: {fileID: 838812661}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
