@@ -41,6 +41,16 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         public delegate IParameterHandler HandlerFactory([DisallowNull] Type type, [AllowNull] string name);
 
         /// <summary>
+        /// 动态处理器工厂委托。接收目标类型和参数名称，若该委托能处理此类型则返回对应的 <see cref="IParameterHandler"/> 实例，
+        /// 否则返回 null 表示"不处理此类型"。
+        /// </summary>
+        /// <param name="type">需要处理的类型</param>
+        /// <param name="name">参数名称（用于提示），可为 null</param>
+        /// <returns>若能处理则返回处理器实例，否则返回 null</returns>
+        [return: MaybeNull]
+        public delegate IParameterHandler DynamicHandlerFactory([DisallowNull] Type type, [AllowNull] string name);
+
+        /// <summary>
         /// 可变阶段：存储每个类型对应的处理器工厂列表。
         /// 单一工厂直接使用；多个工厂在 <see cref="Freeze"/> 时自动组合为 <see cref="CompositeParameterHandler"/>。
         /// </summary>
@@ -50,6 +60,16 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// 冻结阶段：编译后的单工厂字典。为 null 表示尚未冻结。
         /// </summary>
         private Dictionary<Type, HandlerFactory> _frozenFactories;
+
+        /// <summary>
+        /// 可变阶段：动态处理器工厂列表。按注册顺序存储，<see cref="HandlerOf"/> 时按序检查，首个非 null 结果获胜。
+        /// </summary>
+        private List<DynamicHandlerFactory> _dynamicFactories = new();
+
+        /// <summary>
+        /// 冻结阶段：动态处理器工厂的快照数组。为 null 表示尚未冻结。
+        /// </summary>
+        private DynamicHandlerFactory[] _frozenDynamicFactories;
 
         /// <summary>
         /// 是否已冻结。冻结后不可再注册新工厂。
@@ -153,6 +173,34 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             Register<T>((_, _) => handler);
         }
 
+        /// <summary>
+        /// 注册一个动态处理器工厂。动态处理器在 <see cref="HandlerOf(Type, string)"/> 的解析链中，
+        /// 在枚举和数组动态构造之后、StringParameterHandler 降级之前被检查。
+        /// 工厂应返回 null 表示"不处理此类型"，返回非 null 值表示"处理此类型并使用返回的处理器"。
+        /// 多个动态处理器按注册顺序检查，首个返回非 null 的获胜。
+        /// 仅在 <see cref="Freeze"/> 之前有效。
+        /// </summary>
+        /// <param name="factory">动态处理器工厂委托</param>
+        public void RegisterDynamicHandler([DisallowNull] DynamicHandlerFactory factory)
+        {
+            if (_isFrozen)
+            {
+                Debug.LogWarning(
+                    $"[ParameterHandlerRegistry] Cannot register dynamic handler after Freeze(). Ignoring.");
+                return;
+            }
+
+            lock (_lock)
+            {
+                if (_isFrozen)
+                {
+                    return;
+                }
+
+                _dynamicFactories.Add(factory);
+            }
+        }
+
         #endregion
 
         #region 公开 API — 冻结
@@ -197,8 +245,15 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                 }
 
                 _frozenFactories = frozen;
+
+                // 快照动态处理器工厂
+                _frozenDynamicFactories = _dynamicFactories.Count > 0
+                    ? _dynamicFactories.ToArray()
+                    : System.Array.Empty<DynamicHandlerFactory>();
+
                 _isFrozen = true;
-                _factories.Clear(); // 释放可变字典引用，帮助 GC
+                _factories.Clear();          // 释放可变字典引用，帮助 GC
+                _dynamicFactories.Clear();   // 释放可变动态处理器列表引用
             }
         }
 
@@ -224,7 +279,8 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// 1. 已注册的工厂（若已冻结则查编译字典；否则查可变字典并即时组合）
         /// 2. 枚举类型 — 动态构造 EnumParameterHandler
         /// 3. 一维数组类型 — 动态构造 ArrayParameterHandler&lt;T&gt;
-        /// 4. 降级 — 警告并返回 StringParameterHandler
+        /// 4. 动态处理器工厂 — 按注册顺序检查，首个返回非 null 的获胜
+        /// 5. 降级 — 警告并返回 StringParameterHandler
         /// </summary>
         /// <param name="type">目标类型</param>
         /// <param name="name">参数名称（用于提示），为 null 时使用类型名</param>
@@ -284,7 +340,14 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                 return CreateArrayHandler(type, effectiveName);
             }
 
-            // 4. 降级为 StringParameterHandler
+            // 4. 动态处理器工厂 — 按注册顺序检查
+            var dynamicResult = TryDynamicHandlers(type, effectiveName);
+            if (dynamicResult != null)
+            {
+                return dynamicResult;
+            }
+
+            // 5. 降级为 StringParameterHandler
             Debug.LogWarning(
                 $"[ParameterHandlerRegistry] No handler registered for type '{type.FullName}'. " +
                 "Falling back to StringParameterHandler.");
@@ -315,6 +378,52 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             }
 
             return new CompositeParameterHandler(name, type.Name, handlers);
+        }
+
+        /// <summary>
+        /// 遍历所有注册的动态处理器工厂，返回第一个非 null 的结果。
+        /// 冻结阶段使用 <see cref="_frozenDynamicFactories"/> 快照数组（无锁）；
+        /// 可变阶段在锁内快照 <see cref="_dynamicFactories"/> 列表后遍历。
+        /// </summary>
+        /// <returns>若能处理则返回处理器实例，否则返回 null</returns>
+        [return: MaybeNull]
+        private IParameterHandler TryDynamicHandlers(Type type, string name)
+        {
+            if (_isFrozen)
+            {
+                // 冻结阶段：从只读数组快照中读取（无锁）
+                if (_frozenDynamicFactories != null)
+                {
+                    foreach (var factory in _frozenDynamicFactories)
+                    {
+                        var result = factory(type, name);
+                        if (result != null)
+                        {
+                            return result;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // 可变阶段：在锁内快照后遍历，避免迭代期间被 Freeze 修改
+                DynamicHandlerFactory[] snapshot;
+                lock (_lock)
+                {
+                    snapshot = _dynamicFactories.ToArray();
+                }
+
+                foreach (var factory in snapshot)
+                {
+                    var result = factory(type, name);
+                    if (result != null)
+                    {
+                        return result;
+                    }
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

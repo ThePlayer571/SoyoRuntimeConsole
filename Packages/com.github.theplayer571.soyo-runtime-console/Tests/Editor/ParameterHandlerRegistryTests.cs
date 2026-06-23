@@ -292,6 +292,167 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 
         #endregion
 
+        #region 动态处理器
+
+        [Test]
+        public void DynamicHandler_TypeMatches_ReturnsCustomHandler()
+        {
+            // 注册一个匹配 System.Version 的动态处理器
+            _registry.RegisterDynamicHandler((type, name) =>
+                type == typeof(System.Version)
+                    ? new StringParameterHandler(name ?? "Version")
+                    : null);
+
+            var handler = _registry.HandlerOf<System.Version>("ver");
+
+            Assert.That(handler, Is.InstanceOf<StringParameterHandler>());
+            Assert.IsTrue(handler.IsInitialized);
+        }
+
+        [Test]
+        public void DynamicHandler_TypeDoesNotMatch_FallsThrough()
+        {
+            // 注册一个只处理 int 的动态处理器（不处理 DateTime）
+            _registry.RegisterDynamicHandler((type, name) =>
+                type == typeof(int)
+                    ? new IntegerParameterHandler(name ?? "num")
+                    : null);
+
+            // DateTime 应降级
+            LogAssert.Expect(LogType.Warning,
+                "[ParameterHandlerRegistry] No handler registered for type 'System.DateTime'. " +
+                "Falling back to StringParameterHandler.");
+
+            var handler = _registry.HandlerOf<System.DateTime>("date");
+
+            Assert.That(handler, Is.InstanceOf<StringParameterHandler>());
+        }
+
+        [Test]
+        public void DynamicHandler_MultipleFactories_FirstNonNullWins()
+        {
+            // 注册两个动态处理器，都匹配 System.Version
+            _registry.RegisterDynamicHandler((type, name) =>
+                type == typeof(System.Version)
+                    ? new IntegerParameterHandler(name ?? "ver")
+                    : null);
+
+            _registry.RegisterDynamicHandler((type, name) =>
+                type == typeof(System.Version)
+                    ? new StringParameterHandler(name ?? "ver")
+                    : null);
+
+            // 第一个非 null 的应获胜 → IntegerParameterHandler
+            var handler = _registry.HandlerOf<System.Version>("ver");
+
+            Assert.That(handler, Is.InstanceOf<IntegerParameterHandler>());
+        }
+
+        [Test]
+        public void DynamicHandler_GenericTypePattern_MatrixInt()
+        {
+            // 模拟 Matrix<T> 模式匹配：匹配任何封闭的 Matrix<T> 类型
+            _registry.RegisterDynamicHandler((type, name) =>
+            {
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Matrix<>))
+                {
+                    var elementType = type.GetGenericArguments()[0];
+                    if (elementType == typeof(int))
+                    {
+                        return new StringParameterHandler(name ?? "Matrix<int>");
+                    }
+                }
+                return null;
+            });
+
+            // 构造 Matrix<int> 封闭泛型类型
+            var matrixIntType = typeof(Matrix<>).MakeGenericType(typeof(int));
+
+            var handler = _registry.HandlerOf(matrixIntType, "mat");
+
+            Assert.That(handler, Is.InstanceOf<StringParameterHandler>());
+            Assert.IsTrue(handler.IsInitialized);
+        }
+
+        [Test]
+        public void DynamicHandler_AfterFreeze_IsIgnored()
+        {
+            _registry.Freeze();
+
+            // 冻结后注册应被忽略
+            LogAssert.Expect(LogType.Warning,
+                "[ParameterHandlerRegistry] Cannot register dynamic handler after Freeze(). Ignoring.");
+
+            _registry.RegisterDynamicHandler((type, name) =>
+                type == typeof(System.Version)
+                    ? new StringParameterHandler(name ?? "Version")
+                    : null);
+
+            // 动态处理器未生效，Version 应降级
+            LogAssert.Expect(LogType.Warning,
+                "[ParameterHandlerRegistry] No handler registered for type 'System.Version'. " +
+                "Falling back to StringParameterHandler.");
+
+            var handler = _registry.HandlerOf<System.Version>("ver");
+            Assert.That(handler, Is.InstanceOf<StringParameterHandler>());
+        }
+
+        [Test]
+        public void DynamicHandler_EnumAndArrayStillWork()
+        {
+            // 注册一个广泛的动态处理器，不处理枚举/数组
+            _registry.RegisterDynamicHandler((type, name) =>
+                type == typeof(System.Version)
+                    ? new StringParameterHandler(name ?? "Version")
+                    : null);
+
+            // 枚举仍然由内置逻辑处理，而非动态处理器
+            var enumHandler = _registry.HandlerOf<TestEnum>("color");
+            Assert.That(enumHandler, Is.InstanceOf<EnumParameterHandler>());
+
+            // 数组仍然由内置逻辑处理
+            var arrayHandler = _registry.HandlerOf<int[]>("values");
+            Assert.That(arrayHandler, Is.InstanceOf<ArrayParameterHandler<int>>());
+        }
+
+        [Test]
+        public void DynamicHandler_PrecedesFallback()
+        {
+            // 动态处理器处理 DateTime（没有内置注册）
+            _registry.RegisterDynamicHandler((type, name) =>
+                type == typeof(System.DateTime)
+                    ? new IntegerParameterHandler(name ?? "date")
+                    : null);
+
+            // 不应有降级警告（动态处理器捕获了它）
+            var handler = _registry.HandlerOf<System.DateTime>("date");
+
+            // 来自动态处理器，而非 StringParameterHandler 降级
+            Assert.That(handler, Is.InstanceOf<IntegerParameterHandler>());
+        }
+
+        [Test]
+        public void DynamicHandler_FrozenRegistry_ReadWorksAfterFreeze()
+        {
+            // 注册动态处理器
+            _registry.RegisterDynamicHandler((type, name) =>
+                type == typeof(System.Version)
+                    ? new StringParameterHandler(name ?? "Version")
+                    : null);
+
+            _registry.Freeze();
+
+            // 冻结后多次读取，验证无锁路径正常工作
+            for (int i = 0; i < 10; i++)
+            {
+                var handler = _registry.HandlerOf<System.Version>("ver");
+                Assert.That(handler, Is.InstanceOf<StringParameterHandler>());
+                Assert.IsTrue(handler.IsInitialized);
+            }
+        }
+
+        #endregion
+
         #region [ConsoleParameterHandler] 扫描注册
 
         [Test]
@@ -363,5 +524,12 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         {
             return new Point2D { X = x, Y = y };
         }
+    }
+
+    /// <summary>
+    /// 用于测试动态处理器泛型模式匹配的模拟 Matrix&lt;T&gt; 类型。
+    /// </summary>
+    internal class Matrix<T>
+    {
     }
 }

@@ -191,6 +191,24 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             return this;
         }
 
+        /// <summary>
+        /// 注册一个动态处理器工厂，用于根据类型特征（如泛型构造、类型模式等）动态匹配参数处理逻辑。
+        /// 动态处理器在 <see cref="ParameterHandlerRegistry.HandlerOf(Type, string)"/> 解析链中，
+        /// 在枚举和数组动态构造之后、StringParameterHandler 降级之前被检查。
+        /// 工厂应返回 null 表示"不处理此类型"，返回非 null 值表示"处理此类型并使用返回的处理器"。
+        /// 多个动态处理器按注册顺序检查，首个返回非 null 的获胜。
+        /// 仅在 <see cref="Build"/> 或 <see cref="BuildConfig"/> 之前有效（<see cref="ParameterHandlerRegistry.Freeze"/> 之后不可再注册）。
+        /// </summary>
+        /// <param name="factory">动态处理器工厂委托</param>
+        /// <returns>当前的 ConsoleBuilder 实例（用于链式调用）</returns>
+        [return: NotNull]
+        public ConsoleBuilder RegisterDynamicHandler(
+            [DisallowNull] ParameterHandlerRegistry.DynamicHandlerFactory factory)
+        {
+            _registry.RegisterDynamicHandler(factory);
+            return this;
+        }
+
         #endregion
 
         #region 构建

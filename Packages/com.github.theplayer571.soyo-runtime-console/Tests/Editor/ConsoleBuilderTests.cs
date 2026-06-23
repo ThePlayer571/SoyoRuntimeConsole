@@ -338,6 +338,37 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 
         #endregion
 
+        #region 动态处理器
+
+        [Test]
+        public void RegisterDynamicHandler_FluentApi_ReturnsBuilder()
+        {
+            var builder = new ConsoleBuilder()
+                .SetConsoleKey("chain_test")
+                .RegisterDynamicHandler((type, name) => null);
+
+            // 验证流畅链式调用不崩溃
+            Assert.DoesNotThrow(() => builder.Build());
+        }
+
+        [Test]
+        public void RegisterDynamicHandler_BuildSucceeds()
+        {
+            var builder = new ConsoleBuilder()
+                .SetConsoleKey("Tests")
+                .RegisterDynamicHandler((type, name) =>
+                    type == typeof(System.Version)
+                        ? new StringParameterHandler(name ?? "Version")
+                        : null);
+
+            var console = builder.Build();
+
+            Assert.IsNotNull(console);
+            Assert.That(console.Key, Is.EqualTo(new ConsoleKey("Tests")));
+        }
+
+        #endregion
+
         #region 边界情况
 
         [Test]
