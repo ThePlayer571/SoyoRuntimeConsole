@@ -8,10 +8,10 @@ using UnityEngine.TestTools;
 namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 {
     /// <summary>
-    /// <see cref="PreferredParameterHandler"/> 的单元测试。
-    /// 覆盖内置类型获取、多工厂组合、动态类型构造和降级行为。
+    /// <see cref="ParameterHandlerRegistry"/> 的单元测试。
+    /// 覆盖内置类型获取、多工厂组合、动态类型构造、降级行为和 Freeze 功能。
     /// </summary>
-    public class PreferredParameterHandlerTests
+    public class ParameterHandlerRegistryTests
     {
         private enum TestEnum
         {
@@ -20,12 +20,20 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Blue
         }
 
+        private ParameterHandlerRegistry _registry;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _registry = new ParameterHandlerRegistry();
+        }
+
         #region 内置类型
 
         [Test]
         public void Handler_StringType_ReturnsStringParameterHandler()
         {
-            var handler = PreferredParameterHandler.HandlerOf<string>("text");
+            var handler = _registry.HandlerOf<string>("text");
             Assert.That(handler, Is.InstanceOf<StringParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
         }
@@ -33,7 +41,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Handler_IntType_ReturnsIntegerParameterHandler()
         {
-            var handler = PreferredParameterHandler.HandlerOf<int>("count");
+            var handler = _registry.HandlerOf<int>("count");
             Assert.That(handler, Is.InstanceOf<IntegerParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
         }
@@ -41,7 +49,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Handler_FloatType_ReturnsFloatParameterHandler()
         {
-            var handler = PreferredParameterHandler.HandlerOf<float>("speed");
+            var handler = _registry.HandlerOf<float>("speed");
             Assert.That(handler, Is.InstanceOf<FloatParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
         }
@@ -49,7 +57,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Handler_BoolType_ReturnsBooleanParameterHandler()
         {
-            var handler = PreferredParameterHandler.HandlerOf<bool>("flag");
+            var handler = _registry.HandlerOf<bool>("flag");
             Assert.That(handler, Is.InstanceOf<BooleanParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
         }
@@ -57,7 +65,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Handler_Vector2Type_ReturnsVector2ParameterHandler()
         {
-            var handler = PreferredParameterHandler.HandlerOf<Vector2>("pos");
+            var handler = _registry.HandlerOf<Vector2>("pos");
             Assert.That(handler, Is.InstanceOf<Vector2ParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
         }
@@ -65,7 +73,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Handler_Vector2IntType_ReturnsVector2IntParameterHandler()
         {
-            var handler = PreferredParameterHandler.HandlerOf<Vector2Int>("pos");
+            var handler = _registry.HandlerOf<Vector2Int>("pos");
             Assert.That(handler, Is.InstanceOf<Vector2IntParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
         }
@@ -73,7 +81,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Handler_Vector3Type_ReturnsVector3ParameterHandler()
         {
-            var handler = PreferredParameterHandler.HandlerOf<Vector3>("pos");
+            var handler = _registry.HandlerOf<Vector3>("pos");
             Assert.That(handler, Is.InstanceOf<Vector3ParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
         }
@@ -81,7 +89,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Handler_Vector3IntType_ReturnsVector3IntParameterHandler()
         {
-            var handler = PreferredParameterHandler.HandlerOf<Vector3Int>("pos");
+            var handler = _registry.HandlerOf<Vector3Int>("pos");
             Assert.That(handler, Is.InstanceOf<Vector3IntParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
         }
@@ -89,7 +97,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Handler_Vector4Type_ReturnsVector4ParameterHandler()
         {
-            var handler = PreferredParameterHandler.HandlerOf<Vector4>("pos");
+            var handler = _registry.HandlerOf<Vector4>("pos");
             Assert.That(handler, Is.InstanceOf<Vector4ParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
         }
@@ -102,12 +110,13 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         public void Register_MultipleFactoriesForSameType_ReturnsCompositeParameterHandler()
         {
             // 使用 System.Version（无内置工厂的类型）避免污染其他测试
-            PreferredParameterHandler.Register<System.Version>((type, name) =>
+            _registry.Register<System.Version>((type, name) =>
                 new StringParameterHandler(name ?? "Version"));
-            PreferredParameterHandler.Register<System.Version>((type, name) =>
+            _registry.Register<System.Version>((type, name) =>
                 new StringParameterHandler(name ?? "Version"));
 
-            var handler = PreferredParameterHandler.HandlerOf<System.Version>("ver");
+            _registry.Freeze();
+            var handler = _registry.HandlerOf<System.Version>("ver");
 
             // 有两个工厂，应返回 CompositeParameterHandler
             Assert.That(handler, Is.InstanceOf<CompositeParameterHandler>());
@@ -119,9 +128,10 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         {
             // 使用私有嵌套类型，确保没有其他代码意外注册同一类型
             var fixedHandler = new StringParameterHandler("test");
-            PreferredParameterHandler.Register<ConvenienceTestType>(fixedHandler);
+            _registry.Register<ConvenienceTestType>(fixedHandler);
+            _registry.Freeze();
 
-            var handler = PreferredParameterHandler.HandlerOf<ConvenienceTestType>("test");
+            var handler = _registry.HandlerOf<ConvenienceTestType>("test");
 
             // 只有一个工厂，返回工厂结果（即 fixedHandler 本身）
             Assert.That(handler, Is.SameAs(fixedHandler));
@@ -142,7 +152,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Handler_EnumType_DynamicallyCreatesEnumParameterHandler()
         {
-            var handler = PreferredParameterHandler.HandlerOf<TestEnum>("color");
+            var handler = _registry.HandlerOf<TestEnum>("color");
             Assert.That(handler, Is.InstanceOf<EnumParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
 
@@ -158,7 +168,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Handler_EnumTypeViaTypeParameter_DynamicallyCreatesHandler()
         {
-            var handler = PreferredParameterHandler.HandlerOf(typeof(TestEnum), "mode");
+            var handler = _registry.HandlerOf(typeof(TestEnum), "mode");
             Assert.That(handler, Is.InstanceOf<EnumParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
         }
@@ -170,7 +180,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Handler_IntArrayType_DynamicallyCreatesArrayParameterHandler()
         {
-            var handler = PreferredParameterHandler.HandlerOf<int[]>("values");
+            var handler = _registry.HandlerOf<int[]>("values");
 
             Assert.That(handler, Is.InstanceOf<ArrayParameterHandler<int>>());
             Assert.IsTrue(handler.IsInitialized);
@@ -187,7 +197,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Handler_FloatArrayType_DynamicallyCreatesArrayParameterHandler()
         {
-            var handler = PreferredParameterHandler.HandlerOf<float[]>("values");
+            var handler = _registry.HandlerOf<float[]>("values");
 
             Assert.That(handler, Is.InstanceOf<ArrayParameterHandler<float>>());
             Assert.IsTrue(handler.IsInitialized);
@@ -200,7 +210,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Handler_StringArrayType_DynamicallyCreatesArrayParameterHandler()
         {
-            var handler = PreferredParameterHandler.HandlerOf<string[]>("names");
+            var handler = _registry.HandlerOf<string[]>("names");
 
             Assert.That(handler, Is.InstanceOf<ArrayParameterHandler<string>>());
             Assert.IsTrue(handler.IsInitialized);
@@ -215,10 +225,10 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         {
             // System.DateTime 没有注册的处理器
             LogAssert.Expect(LogType.Warning,
-                "[PreferredParameterHandler] No preferred handler registered for type 'System.DateTime'. " +
+                "[ParameterHandlerRegistry] No handler registered for type 'System.DateTime'. " +
                 "Falling back to StringParameterHandler.");
 
-            var handler = PreferredParameterHandler.HandlerOf<System.DateTime>("date");
+            var handler = _registry.HandlerOf<System.DateTime>("date");
 
             Assert.That(handler, Is.InstanceOf<StringParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
@@ -231,21 +241,43 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Handler_NullName_UsesTypeNameAsDefault()
         {
-            var handler = PreferredParameterHandler.HandlerOf<int>(null);
+            var handler = _registry.HandlerOf<int>(null);
 
             Assert.That(handler, Is.InstanceOf<IntegerParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
         }
 
         [Test]
-        public void Initialize_CalledMultipleTimes_DoesNotThrow()
+        public void Freeze_CalledMultipleTimes_DoesNotThrow()
         {
             Assert.DoesNotThrow(() =>
             {
-                PreferredParameterHandler.Initialize();
-                PreferredParameterHandler.Initialize();
-                PreferredParameterHandler.Initialize();
+                _registry.Freeze();
+                _registry.Freeze();
+                _registry.Freeze();
             });
+        }
+
+        [Test]
+        public void Register_AfterFreeze_IsIgnored()
+        {
+            _registry.Freeze();
+
+            // 冻结后注册应被忽略（不抛异常，仅警告）
+            LogAssert.Expect(LogType.Warning,
+                "[ParameterHandlerRegistry] Cannot register factory for type 'System.Version' " +
+                "after Freeze(). Ignoring.");
+
+            _registry.Register<System.Version>((type, name) =>
+                new StringParameterHandler(name ?? "Version"));
+
+            // 降级行为应仍然返回 StringParameterHandler（未被注册）
+            LogAssert.Expect(LogType.Warning,
+                "[ParameterHandlerRegistry] No handler registered for type 'System.Version'. " +
+                "Falling back to StringParameterHandler.");
+
+            var handler = _registry.HandlerOf<System.Version>("ver");
+            Assert.That(handler, Is.InstanceOf<StringParameterHandler>());
         }
 
         #endregion
@@ -253,12 +285,13 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         #region [ConsoleParameterHandler] 扫描注册
 
         [Test]
-        public void Initialize_ScansConsoleParameterHandler_HandlerIsRegistered()
+        public void ScanType_ScansConsoleParameterHandler_HandlerIsRegistered()
         {
-            // 触发懒加载扫描（如果尚未初始化）
-            PreferredParameterHandler.Initialize();
+            // 显式扫描 ParameterHandlerTestFixture 中的 [ConsoleParameterHandler]
+            ConsoleParameterHandlerScanner.ScanType(typeof(ParameterHandlerTestFixture), _registry);
+            _registry.Freeze();
 
-            var handler = PreferredParameterHandler.HandlerOf<Point2D>("point");
+            var handler = _registry.HandlerOf<Point2D>("point");
 
             Assert.That(handler, Is.InstanceOf<TupleParameterHandler>());
             Assert.IsTrue(handler.IsInitialized);
@@ -267,9 +300,10 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void ConsoleParameterHandler_Parse_ReturnsCorrectType()
         {
-            PreferredParameterHandler.Initialize();
+            ConsoleParameterHandlerScanner.ScanType(typeof(ParameterHandlerTestFixture), _registry);
+            _registry.Freeze();
 
-            var handler = PreferredParameterHandler.HandlerOf<Point2D>("point");
+            var handler = _registry.HandlerOf<Point2D>("point");
 
             // Point2D 的 [ConsoleParameterHandler] 接受 (int x, int y)，返回 Point2D
             Assert.IsTrue(handler.IsValid("(10, 20)"));
@@ -285,9 +319,10 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void ConsoleParameterHandler_InvalidInput_ReturnsFalse()
         {
-            PreferredParameterHandler.Initialize();
+            ConsoleParameterHandlerScanner.ScanType(typeof(ParameterHandlerTestFixture), _registry);
+            _registry.Freeze();
 
-            var handler = PreferredParameterHandler.HandlerOf<Point2D>("point");
+            var handler = _registry.HandlerOf<Point2D>("point");
 
             // 只有一个子参数时非法
             Assert.IsFalse(handler.IsValid("(10)"));

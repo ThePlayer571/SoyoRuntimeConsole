@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using Soyo.SoyoRuntimeConsole.Attributes;
-using Soyo.SoyoRuntimeConsole.Commands;
 using Soyo.SoyoRuntimeConsole.ValueObjects;
 using UnityEngine;
 using ConsoleKey = Soyo.SoyoRuntimeConsole.ValueObjects.ConsoleKey;
@@ -14,7 +13,8 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
     /// <summary>
     /// 控制台命令属性扫描器。
     /// 扫描程序集中的 <see cref="ConsoleCommandAttribute"/> 标记的静态方法，
-    /// 将其包装为 <see cref="ConsoleCommandDefinition"/> 并收集对应的帮助文本。
+    /// 收集原始命令方法数据（<see cref="PendingCommandEntry"/>），
+    /// 参数处理器的解析由 <see cref="ConsoleBuilder"/> 在构建阶段完成。
     /// </summary>
     /// <remarks>
     /// <para>扫描规则：</para>
@@ -23,7 +23,6 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
     /// <item>泛型方法 → 警告并跳过</item>
     /// <item>默认参数 → 警告但不跳过</item>
     /// <item>ref/out 参数 → 警告但不跳过</item>
-    /// <item>参数通过 <see cref="PreferredParameterHandler"/> 获取处理器</item>
     /// <item>命令名优先使用 <see cref="ConsoleCommandAttribute.Name"/>，否则使用方法名</item>
     /// <item><see cref="TargetConsoleKeyAttribute"/> 方法级优先于类级，无标记为全局命令</item>
     /// <item><see cref="CommandHelpTextAttribute"/> 同名重复时保留第一个并警告</item>
@@ -36,17 +35,18 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
 
         /// <summary>
         /// 扫描单个类中所有标记了 <see cref="ConsoleCommandAttribute"/> 的静态方法。
+        /// 返回暂存的命令条目和帮助文本，参数处理器在构建阶段解析。
         /// </summary>
         /// <param name="classType">要扫描的类类型</param>
         /// <param name="targetKey">目标 ConsoleKey 过滤。为 null 时包含所有命令。</param>
         /// <returns>
-        /// 元组：(命令定义列表, 命令帮助文本字典)。
+        /// 元组：(暂存命令条目列表, 命令帮助文本字典)。
         /// 若 classType 为 null 则返回空集合。
         /// </returns>
-        public static (List<ConsoleCommandDefinition> Commands, Dictionary<CommandName, string> HelpTexts)
+        public static (List<PendingCommandEntry> PendingCommands, Dictionary<CommandName, string> HelpTexts)
             ScanClass([DisallowNull] Type classType, ConsoleKey? targetKey = null)
         {
-            var commands = new List<ConsoleCommandDefinition>();
+            var pendingCommands = new List<PendingCommandEntry>();
             var helpTexts = new Dictionary<CommandName, string>();
 
             var methods = classType.GetMethods(MethodFlags);
@@ -58,13 +58,27 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                     continue;
                 }
 
-                if (!TryProcessMethod(method, attr, targetKey, commands, helpTexts))
+                var entry = TryProcessMethod(method, attr, targetKey);
+                if (entry == null)
                 {
                     continue;
                 }
+
+                pendingCommands.Add(entry.Value);
+
+                // 收集帮助文本
+                if (entry.Value.HelpText != null)
+                {
+                    if (!helpTexts.TryAdd(entry.Value.CommandName, entry.Value.HelpText))
+                    {
+                        Debug.LogWarning(
+                            $"[ConsoleCommand] Help text for command '{entry.Value.CommandName.Name}' is already defined. " +
+                            $"Ignoring duplicate from '{method.DeclaringType!.FullName}.{method.Name}'.");
+                    }
+                }
             }
 
-            return (commands, helpTexts);
+            return (pendingCommands, helpTexts);
         }
 
         /// <summary>
@@ -72,11 +86,11 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// </summary>
         /// <param name="assembly">要扫描的程序集</param>
         /// <param name="targetKey">目标 ConsoleKey 过滤。为 null 时包含所有命令。</param>
-        /// <returns>元组：(命令定义列表, 命令帮助文本字典)</returns>
-        public static (List<ConsoleCommandDefinition> Commands, Dictionary<CommandName, string> HelpTexts)
+        /// <returns>元组：(暂存命令条目列表, 命令帮助文本字典)</returns>
+        public static (List<PendingCommandEntry> PendingCommands, Dictionary<CommandName, string> HelpTexts)
             ScanAssembly([DisallowNull] Assembly assembly, ConsoleKey? targetKey = null)
         {
-            var commands = new List<ConsoleCommandDefinition>();
+            var pendingCommands = new List<PendingCommandEntry>();
             var helpTexts = new Dictionary<CommandName, string>();
 
             Type[] types;
@@ -100,11 +114,11 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                     continue;
                 }
 
-                var (classCommands, classHelpTexts) = ScanClass(type, targetKey);
-                MergeResults(commands, helpTexts, classCommands, classHelpTexts);
+                var (classPending, classHelpTexts) = ScanClass(type, targetKey);
+                MergeResults(pendingCommands, helpTexts, classPending, classHelpTexts);
             }
 
-            return (commands, helpTexts);
+            return (pendingCommands, helpTexts);
         }
 
         /// <summary>
@@ -112,14 +126,14 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// 排除系统程序集、Unity 程序集以及未引用 SoyoRuntimeConsole 的程序集。
         /// </summary>
         /// <param name="targetKey">目标 ConsoleKey 过滤。为 null 时包含所有命令。</param>
-        /// <returns>元组：(命令定义列表, 命令帮助文本字典)</returns>
+        /// <returns>元组：(暂存命令条目列表, 命令帮助文本字典)</returns>
         /// <remarks>
         /// 每次调用都是独立的全量扫描，不缓存结果。
         /// </remarks>
-        public static (List<ConsoleCommandDefinition> Commands, Dictionary<CommandName, string> HelpTexts)
+        public static (List<PendingCommandEntry> PendingCommands, Dictionary<CommandName, string> HelpTexts)
             ScanAllAssemblies(ConsoleKey? targetKey = null)
         {
-            var commands = new List<ConsoleCommandDefinition>();
+            var pendingCommands = new List<PendingCommandEntry>();
             var helpTexts = new Dictionary<CommandName, string>();
 
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
@@ -132,30 +146,29 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                     continue;
                 }
 
-                var (asmCommands, asmHelpTexts) = ScanAssembly(assembly, targetKey);
-                MergeResults(commands, helpTexts, asmCommands, asmHelpTexts);
+                var (asmPending, asmHelpTexts) = ScanAssembly(assembly, targetKey);
+                MergeResults(pendingCommands, helpTexts, asmPending, asmHelpTexts);
             }
 
-            return (commands, helpTexts);
+            return (pendingCommands, helpTexts);
         }
 
         #region 内部辅助方法
 
         /// <summary>
         /// 处理单个标记了 <see cref="ConsoleCommandAttribute"/> 的方法。
+        /// 执行验证和过滤，返回暂存的命令条目（不解析参数处理器）。
         /// </summary>
-        /// <returns>true 表示成功处理并添加了命令；false 表示该方法被跳过。</returns>
-        private static bool TryProcessMethod(
+        /// <returns>暂存命令条目，若该方法应被跳过则返回 null。</returns>
+        private static PendingCommandEntry? TryProcessMethod(
             MethodInfo method,
             ConsoleCommandAttribute attr,
-            ConsoleKey? targetKey,
-            List<ConsoleCommandDefinition> commands,
-            Dictionary<CommandName, string> helpTexts)
+            ConsoleKey? targetKey)
         {
             // 1. TargetConsoleKey 过滤 — 不匹配则静默跳过，避免为不相关的命令产生噪音 Warning
             if (!PassesKeyFilter(method, targetKey))
             {
-                return false;
+                return null;
             }
 
             // 2. 泛型方法检查 — 跳过
@@ -164,7 +177,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                 Debug.LogWarning(
                     $"[ConsoleCommand] '{method.DeclaringType!.FullName}.{method.Name}' is a generic method, " +
                     "which is not supported. Skipping.");
-                return false;
+                return null;
             }
 
             // 3. 默认参数检查 — 警告但不跳过
@@ -190,32 +203,12 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             // 5. 解析命令名
             var commandName = attr.Name ?? new CommandName(method.Name);
 
-            // 6. 构建参数处理器列表
-            var parameterHandlers = new IParameterHandler[parameters.Length];
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                var param = parameters[i];
-                var paramName = param.GetCustomAttribute<CommandParameterAttribute>()?.Name ?? param.Name;
-                parameterHandlers[i] = PreferredParameterHandler.HandlerOf(param.ParameterType, paramName);
-            }
-
-            // 7. 创建命令定义
-            var commandDef = new AttributeCommandDefinition(method, commandName, parameterHandlers);
-            commands.Add(commandDef);
-
-            // 8. 收集帮助文本
+            // 6. 收集帮助文本
             var helpAttr = method.GetCustomAttribute<CommandHelpTextAttribute>();
-            if (helpAttr != null)
-            {
-                if (!helpTexts.TryAdd(commandName, helpAttr.HelpText))
-                {
-                    Debug.LogWarning(
-                        $"[ConsoleCommand] Help text for command '{commandName.Name}' is already defined. " +
-                        $"Ignoring duplicate from '{method.DeclaringType!.FullName}.{method.Name}'.");
-                }
-            }
+            var helpText = helpAttr?.HelpText;
 
-            return true;
+            // 7. 返回暂存条目 — 参数处理器由 ConsoleBuilder 在构建阶段解析
+            return new PendingCommandEntry(method, commandName, helpText);
         }
 
         /// <summary>
@@ -248,12 +241,12 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// 将增量扫描结果合并到总结果中。
         /// </summary>
         private static void MergeResults(
-            List<ConsoleCommandDefinition> commands,
+            List<PendingCommandEntry> pendingCommands,
             Dictionary<CommandName, string> helpTexts,
-            List<ConsoleCommandDefinition> newCommands,
+            List<PendingCommandEntry> newPending,
             Dictionary<CommandName, string> newHelpTexts)
         {
-            commands.AddRange(newCommands);
+            pendingCommands.AddRange(newPending);
 
             foreach (var kv in newHelpTexts)
             {

@@ -13,7 +13,7 @@ namespace Soyo.SoyoRuntimeConsole.Attributes
     /// </summary>
     /// <remarks>
     /// 无参构造时，命令名将使用方法名（由扫描器填充）。
-    /// 方法的每个参数会通过 <see cref="PreferredParameterHandler"/> 解析。
+    /// 方法的每个参数会通过 <see cref="ParameterHandlerRegistry"/> 解析。
     /// 不支持泛型方法和带默认值的参数。
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]

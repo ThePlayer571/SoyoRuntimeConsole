@@ -3,6 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 using Soyo.SoyoRuntimeConsole.Attributes;
 using Soyo.SoyoRuntimeConsole.Helpers;
+using Soyo.SoyoRuntimeConsole.ParameterHandlers;
 using Soyo.SoyoRuntimeConsole.ValueObjects;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -36,6 +37,49 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             public override void Execute(IReadOnlyList<object> parameters, IConsole console)
             {
                 Debug.Log($"TestCommand '{CommandName.Name}' executed");
+            }
+        }
+
+        #endregion
+
+        #region 同时包含 [ConsoleCommand] 和 [ConsoleParameterHandler] 的测试 Fixture
+
+        /// <summary>
+        /// 用于验证自定义参数类型的简单结构体。
+        /// </summary>
+        public struct BuilderTestPoint
+        {
+            public int X;
+            public int Y;
+        }
+
+        /// <summary>
+        /// 同时包含 [ConsoleCommand] 和 [ConsoleParameterHandler] 的 Fixture，
+        /// 用于验证 RegisterFromClass 一次性扫描两种 Attribute。
+        /// </summary>
+        [TargetConsoleKey("Tests")]
+        private class DualAttributeFixture
+        {
+            public static BuilderTestPoint LastPoint { get; set; }
+
+            /// <summary>
+            /// [ConsoleParameterHandler] — 注册 BuilderTestPoint 的参数处理器。
+            /// </summary>
+            [ConsoleParameterHandler]
+            private static BuilderTestPoint MakePoint(int x, int y)
+            {
+                return new BuilderTestPoint { X = x, Y = y };
+            }
+
+            /// <summary>
+            /// [ConsoleCommand] — 使用 BuilderTestPoint 作为参数类型的命令。
+            /// </summary>
+            [ConsoleCommand("dual_test")]
+            [CommandHelpText("Dual attribute test command.")]
+            private static void DualCommand(BuilderTestPoint point)
+            {
+                LastPoint = point;
+                Debug.Log($"DualCommand: ({point.X}, {point.Y})");
             }
         }
 
@@ -208,6 +252,55 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(console.Commands.Any(c => c.CommandName.Name == "builder_test_cmd"), Is.True);
         }
 
+        /// <summary>
+        /// 验证 RegisterFromClass 同时扫描了 [ConsoleCommand] 和 [ConsoleParameterHandler]。
+        /// DualAttributeFixture 包含自定义类型 BuilderTestPoint 的处理器和一条使用该类型的命令。
+        /// </summary>
+        [Test]
+        public void RegisterFromClass_WithParameterHandlers_RegistersBoth()
+        {
+            var console = new ConsoleBuilder()
+                .SetConsoleKey("Tests")
+                .RegisterFromClass<DualAttributeFixture>()
+                .Build();
+
+            // 验证命令已注册
+            Assert.That(console.Commands.Any(c => c.CommandName.Name == "dual_test"), Is.True);
+
+            // 验证帮助文本
+            Assert.That(console.CommandHelpText[new CommandName("dual_test")],
+                Is.EqualTo("Dual attribute test command."));
+
+            // 验证参数处理器已通过 [ConsoleParameterHandler] 注册（自定义类型 BuilderTestPoint）
+            var cmd = console.Commands.First(c => c.CommandName.Name == "dual_test");
+            Assert.That(cmd.ParameterHandlers.Count, Is.EqualTo(1));
+            Assert.That(cmd.ParameterHandlers[0], Is.InstanceOf<TupleParameterHandler>());
+        }
+
+        /// <summary>
+        /// 验证两个 ConsoleBuilder 实例的 ParameterHandlerRegistry 互相隔离。
+        /// </summary>
+        [Test]
+        public void RegisterFromClass_BuilderIsolation_TwoBuildersDoNotShareState()
+        {
+            // Builder 1: 注册自定义类型处理器
+            var builder1 = new ConsoleBuilder()
+                .SetConsoleKey("Tests")
+                .RegisterFromClass<DualAttributeFixture>();
+            var console1 = builder1.Build();
+
+            // Builder 2: 不注册任何自定义处理器
+            var builder2 = new ConsoleBuilder()
+                .SetConsoleKey("Tests");
+            var console2 = builder2.Build();
+
+            // console1 应有 dual_test 命令
+            Assert.That(console1.Commands.Any(c => c.CommandName.Name == "dual_test"), Is.True);
+
+            // console2 不应有 dual_test 命令（未扫描 DualAttributeFixture）
+            Assert.That(console2.Commands.Any(c => c.CommandName.Name == "dual_test"), Is.False);
+        }
+
         #endregion
 
         #region BuildConfig
@@ -224,6 +317,23 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(config.Key, Is.EqualTo(new ConsoleKey("cfg_test")));
             Assert.That(config.CommandDefinitions.Count, Is.EqualTo(1));
             Assert.That(config.CommandDefinitions[0].CommandName.Name, Is.EqualTo("cfg_cmd"));
+        }
+
+        /// <summary>
+        /// BuildConfig 多次调用返回相同结果（幂等性）。
+        /// </summary>
+        [Test]
+        public void BuildConfig_CalledMultipleTimes_ReturnsSameResult()
+        {
+            var builder = new ConsoleBuilder()
+                .SetConsoleKey("idem_test")
+                .RegisterCommand(new TestCommand("idem_cmd"));
+
+            var config1 = builder.BuildConfig();
+            var config2 = builder.BuildConfig();
+
+            Assert.That(config1.Key, Is.EqualTo(config2.Key));
+            Assert.That(config1.CommandDefinitions.Count, Is.EqualTo(config2.CommandDefinitions.Count));
         }
 
         #endregion

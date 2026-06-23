@@ -10,7 +10,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
     /// <summary>
     /// 参数处理器属性扫描器。
     /// 扫描程序集中标记了 <see cref="ConsoleParameterHandlerAttribute"/> 的静态方法，
-    /// 将其注册到 <see cref="PreferredParameterHandler"/>。
+    /// 将其注册到指定的 <see cref="ParameterHandlerRegistry"/>。
     /// </summary>
     internal static class ConsoleParameterHandlerScanner
     {
@@ -18,31 +18,33 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
         /// <summary>
-        /// 扫描所有已加载的程序集，将标记了 <see cref="ConsoleParameterHandlerAttribute"/> 的方法
-        /// 注册为 <see cref="PreferredParameterHandler"/> 的处理器工厂。
+        /// 扫描单个类型中标记了 <see cref="ConsoleParameterHandlerAttribute"/> 的静态方法，
+        /// 并注册到给定的 <paramref name="registry"/>。
         /// </summary>
-        public static void ScanAllAssemblies()
+        /// <param name="type">要扫描的类型</param>
+        /// <param name="registry">目标注册中心</param>
+        public static void ScanType(Type type, ParameterHandlerRegistry registry)
         {
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            var runtimeAssemblyName = typeof(ConsoleParameterHandlerScanner).Assembly.GetName().Name;
-
-            foreach (var assembly in assemblies)
+            var methods = type.GetMethods(MethodFlags);
+            foreach (var method in methods)
             {
-                if (ShouldSkipAssembly(assembly, runtimeAssemblyName))
+                var attr = method.GetCustomAttribute<ConsoleParameterHandlerAttribute>();
+                if (attr == null)
                 {
                     continue;
                 }
 
-                ScanAssembly(assembly);
+                TryRegisterMethod(method, attr, registry);
             }
         }
 
-        #region 内部实现
-
         /// <summary>
-        /// 扫描单个程序集。
+        /// 扫描单个程序集中所有标记了 <see cref="ConsoleParameterHandlerAttribute"/> 的静态方法，
+        /// 并注册到给定的 <paramref name="registry"/>。
         /// </summary>
-        private static void ScanAssembly(Assembly assembly)
+        /// <param name="assembly">要扫描的程序集</param>
+        /// <param name="registry">目标注册中心</param>
+        public static void ScanAssembly(Assembly assembly, ParameterHandlerRegistry registry)
         {
             Type[] types;
             try
@@ -61,26 +63,40 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                     continue;
                 }
 
-                var methods = type.GetMethods(MethodFlags);
-                foreach (var method in methods)
-                {
-                    var attr = method.GetCustomAttribute<ConsoleParameterHandlerAttribute>();
-                    if (attr == null)
-                    {
-                        continue;
-                    }
-
-                    TryRegisterMethod(method, attr);
-                }
+                ScanType(type, registry);
             }
         }
+
+        /// <summary>
+        /// 扫描所有已加载的程序集中标记了 <see cref="ConsoleParameterHandlerAttribute"/> 的静态方法，
+        /// 并注册到给定的 <paramref name="registry"/>。
+        /// </summary>
+        /// <param name="registry">目标注册中心</param>
+        public static void ScanAllAssemblies(ParameterHandlerRegistry registry)
+        {
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var runtimeAssemblyName = typeof(ConsoleParameterHandlerScanner).Assembly.GetName().Name;
+
+            foreach (var assembly in assemblies)
+            {
+                if (ShouldSkipAssembly(assembly, runtimeAssemblyName))
+                {
+                    continue;
+                }
+
+                ScanAssembly(assembly, registry);
+            }
+        }
+
+        #region 内部实现
 
         /// <summary>
         /// 尝试将单个方法注册为处理器工厂。
         /// </summary>
         private static void TryRegisterMethod(
             MethodInfo method,
-            ConsoleParameterHandlerAttribute attr)
+            ConsoleParameterHandlerAttribute attr,
+            ParameterHandlerRegistry registry)
         {
             // 泛型方法检查 — 跳过
             if (method.IsGenericMethod)
@@ -129,9 +145,9 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                 }
             }
 
-            // 注册工厂
-            PreferredParameterHandler.Register(targetType, (requestedType, name) =>
-                CreateHandler(method, targetType, name));
+            // 注册工厂到给定的 registry
+            registry.Register(targetType, (requestedType, name) =>
+                CreateHandler(method, targetType, name, registry));
         }
 
         /// <summary>
@@ -140,7 +156,8 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         private static IParameterHandler CreateHandler(
             MethodInfo method,
             Type targetType,
-            string name)
+            string name,
+            ParameterHandlerRegistry registry)
         {
             var methodParams = method.GetParameters();
             var subHandlers = new IParameterHandler[methodParams.Length];
@@ -148,7 +165,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             for (int i = 0; i < methodParams.Length; i++)
             {
                 var param = methodParams[i];
-                subHandlers[i] = PreferredParameterHandler.HandlerOf(param.ParameterType, param.Name);
+                subHandlers[i] = registry.HandlerOf(param.ParameterType, param.Name);
             }
 
             var effectiveName = name ?? targetType.Name;

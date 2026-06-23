@@ -98,11 +98,9 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void EndToEnd_Vector3EnumArray_ParsedAndExecutedCorrectly()
         {
-            var (commands, helpTexts) = ConsoleAttributeScanner.ScanClass(typeof(ComplexParamFixture));
-            var config = new ConsoleConfig(new ConsoleKey("ITest"), commands, helpTexts.Select(kv => (kv.Key, kv.Value)));
             var console = new ConsoleBuilder()
                 .SetConsoleKey("Tests")
-                .RegisterConsoleConfig(config)
+                .RegisterFromClass(typeof(ComplexParamFixture))
                 .Build();
 
             // 验证命令已注册
@@ -136,17 +134,16 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void DuplicateCommandName_BothRegistered_ExecutedByIndex()
         {
-            var (commands, _) = ConsoleAttributeScanner.ScanClass(typeof(DuplicateNameFixture));
-            var config = new ConsoleConfig(new ConsoleKey("ITest"), commands, null);
             var console = new ConsoleBuilder()
                 .SetConsoleKey("Tests")
-                .RegisterConsoleConfig(config)
+                .RegisterFromClass(typeof(DuplicateNameFixture))
                 .Build();
 
             // 两个命令同名
-            Assert.That(commands.Count, Is.EqualTo(2));
-            Assert.That(commands[0].CommandName.Name, Is.EqualTo("itest_dup"));
-            Assert.That(commands[1].CommandName.Name, Is.EqualTo("itest_dup"));
+            var dupCommands = console.Commands
+                .Where(c => c.CommandName.Name == "itest_dup")
+                .ToList();
+            Assert.That(dupCommands.Count, Is.EqualTo(2));
 
             // 一个有参数一个无：输入无参数时 Executable 选择无参版本
             DuplicateNameFixture.LastCalled = null;
@@ -174,10 +171,10 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
                 "[ConsoleCommand] 'Soyo.SoyoRuntimeConsole.Tests.Editor.IntegrationTests+RefParamFixture.RefCommand' " +
                 "has ref/out parameter 'value', which may cause unexpected behavior.");
 
-            var (commands, _) = ConsoleAttributeScanner.ScanClass(typeof(RefParamFixture));
+            var (pendingCommands, _) = ConsoleAttributeScanner.ScanClass(typeof(RefParamFixture));
 
             // ref 参数的方法不应被跳过
-            Assert.That(commands.Count, Is.EqualTo(1));
+            Assert.That(pendingCommands.Count, Is.EqualTo(1));
         }
 
         #endregion
@@ -218,11 +215,9 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void EndToEnd_MultipleBasicTypes_AllParsedCorrectly()
         {
-            var (commands, _) = ConsoleAttributeScanner.ScanClass(typeof(ManyTypesFixture));
-            var config = new ConsoleConfig(new ConsoleKey("ITest"), commands, null);
             var console = new ConsoleBuilder()
                 .SetConsoleKey("Tests")
-                .RegisterConsoleConfig(config)
+                .RegisterFromClass(typeof(ManyTypesFixture))
                 .Build();
 
             ManyTypesFixture.LastResult = null;

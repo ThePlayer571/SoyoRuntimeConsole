@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using Soyo.SoyoRuntimeConsole.Attributes;
+using Soyo.SoyoRuntimeConsole.Commands;
 using Soyo.SoyoRuntimeConsole.ValueObjects;
 using UnityEngine;
 using ConsoleKey = Soyo.SoyoRuntimeConsole.ValueObjects.ConsoleKey;
@@ -12,7 +13,8 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
 {
     /// <summary>
     /// 控制台构建器。提供流畅的 Builder API 来构建 <see cref="ConsoleConfig"/> 和 <see cref="IConsole"/>。
-    /// 支持手动注册命令和帮助文本，也支持从类/程序集中扫描 <see cref="ConsoleCommandAttribute"/> 自动注册。
+    /// 支持手动注册命令和帮助文本，也支持从类/程序集中扫描 <see cref="ConsoleCommandAttribute"/> 和
+    /// <see cref="ConsoleParameterHandlerAttribute"/> 自动注册。
     /// </summary>
     /// <example>
     /// <code>
@@ -27,7 +29,10 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
     {
         private ConsoleKey? _key;
         private readonly List<ConsoleCommandDefinition> _commands = new();
+        private readonly List<PendingCommandEntry> _pendingCommands = new();
         private readonly Dictionary<CommandName, string> _helpTexts = new();
+        private readonly ParameterHandlerRegistry _registry = new();
+        private bool _built;
 
         #region 配置方法
 
@@ -125,7 +130,8 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         #region 扫描注册
 
         /// <summary>
-        /// 扫描泛型类 <typeparamref name="T"/> 中的 <see cref="ConsoleCommandAttribute"/> 并注册。
+        /// 扫描泛型类 <typeparamref name="T"/> 中的 <see cref="ConsoleCommandAttribute"/> 和
+        /// <see cref="ConsoleParameterHandlerAttribute"/> 并注册。
         /// TargetConsoleKey 过滤使用当前 Builder 设置的 ConsoleKey（若已设置）。
         /// </summary>
         [return: NotNull]
@@ -135,35 +141,53 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         }
 
         /// <summary>
-        /// 扫描指定类中的 <see cref="ConsoleCommandAttribute"/> 并注册。
+        /// 扫描指定类中的 <see cref="ConsoleCommandAttribute"/> 和
+        /// <see cref="ConsoleParameterHandlerAttribute"/> 并注册。
         /// </summary>
         [return: NotNull]
         public ConsoleBuilder RegisterFromClass([DisallowNull] Type type)
         {
-            var (commands, helpTexts) = ConsoleAttributeScanner.ScanClass(type, _key);
-            MergeScanResults(commands, helpTexts);
+            // 1. 扫描 [ConsoleParameterHandler] 并注册到 registry
+            ConsoleParameterHandlerScanner.ScanType(type, _registry);
+
+            // 2. 扫描 [ConsoleCommand] 并暂存为 pending entries
+            var (pending, helpTexts) = ConsoleAttributeScanner.ScanClass(type, _key);
+            _pendingCommands.AddRange(pending);
+            MergeHelpTexts(helpTexts);
             return this;
         }
 
         /// <summary>
-        /// 扫描指定程序集中的 <see cref="ConsoleCommandAttribute"/> 并注册。
+        /// 扫描指定程序集中的 <see cref="ConsoleCommandAttribute"/> 和
+        /// <see cref="ConsoleParameterHandlerAttribute"/> 并注册。
         /// </summary>
         [return: NotNull]
         public ConsoleBuilder RegisterFromAssembly([DisallowNull] Assembly assembly)
         {
-            var (commands, helpTexts) = ConsoleAttributeScanner.ScanAssembly(assembly, _key);
-            MergeScanResults(commands, helpTexts);
+            // 1. 扫描 [ConsoleParameterHandler] 并注册到 registry
+            ConsoleParameterHandlerScanner.ScanAssembly(assembly, _registry);
+
+            // 2. 扫描 [ConsoleCommand] 并暂存为 pending entries
+            var (pending, helpTexts) = ConsoleAttributeScanner.ScanAssembly(assembly, _key);
+            _pendingCommands.AddRange(pending);
+            MergeHelpTexts(helpTexts);
             return this;
         }
 
         /// <summary>
-        /// 扫描所有已加载程序集中的 <see cref="ConsoleCommandAttribute"/> 并注册。
+        /// 扫描所有已加载程序集中的 <see cref="ConsoleCommandAttribute"/> 和
+        /// <see cref="ConsoleParameterHandlerAttribute"/> 并注册。
         /// </summary>
         [return: NotNull]
         public ConsoleBuilder RegisterFromAllAssemblies()
         {
-            var (commands, helpTexts) = ConsoleAttributeScanner.ScanAllAssemblies(_key);
-            MergeScanResults(commands, helpTexts);
+            // 1. 扫描 [ConsoleParameterHandler] 并注册到 registry
+            ConsoleParameterHandlerScanner.ScanAllAssemblies(_registry);
+
+            // 2. 扫描 [ConsoleCommand] 并暂存为 pending entries
+            var (pending, helpTexts) = ConsoleAttributeScanner.ScanAllAssemblies(_key);
+            _pendingCommands.AddRange(pending);
+            MergeHelpTexts(helpTexts);
             return this;
         }
 
@@ -173,9 +197,12 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
 
         /// <summary>
         /// 构建 <see cref="ConsoleConfig"/>。
+        /// 首次调用时执行构建阶段：冻结参数处理器注册表，解析所有暂存的命令条目。
+        /// 多次调用返回相同结果。
         /// </summary>
         public ConsoleConfig BuildConfig()
         {
+            EnsureBuilt();
             return new ConsoleConfig(
                 _key ?? new ConsoleKey(string.Empty),
                 _commands,
@@ -196,14 +223,45 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         #region 内部辅助
 
         /// <summary>
-        /// 合并扫描结果到 Builder 内部集合。
+        /// 执行构建阶段（幂等）。冻结参数处理器注册表，解析暂存的命令条目。
         /// </summary>
-        private void MergeScanResults(
-            List<ConsoleCommandDefinition> commands,
-            Dictionary<CommandName, string> helpTexts)
+        private void EnsureBuilt()
         {
-            _commands.AddRange(commands);
+            if (_built)
+            {
+                return;
+            }
 
+            _built = true;
+
+            // 1. 冻结注册表 — 之后不可再注册新处理器
+            _registry.Freeze();
+
+            // 2. 解析暂存的命令条目
+            foreach (var pending in _pendingCommands)
+            {
+                var paramInfos = pending.Method.GetParameters();
+                var handlers = new IParameterHandler[paramInfos.Length];
+
+                for (int i = 0; i < paramInfos.Length; i++)
+                {
+                    var param = paramInfos[i];
+                    var paramName = param.GetCustomAttribute<CommandParameterAttribute>()?.Name ?? param.Name;
+                    handlers[i] = _registry.HandlerOf(param.ParameterType, paramName);
+                }
+
+                var command = new AttributeCommandDefinition(pending.Method, pending.CommandName, handlers);
+                _commands.Add(command);
+            }
+
+            _pendingCommands.Clear();
+        }
+
+        /// <summary>
+        /// 合并帮助文本到 Builder 内部集合。
+        /// </summary>
+        private void MergeHelpTexts(Dictionary<CommandName, string> helpTexts)
+        {
             foreach (var kv in helpTexts)
             {
                 RegisterHelpText(kv.Key, kv.Value);

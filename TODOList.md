@@ -4,6 +4,10 @@
 
 看一遍新生成的代码
 
+未命名COnsole使用Default作为名称
+
+让ai重构Test结构，让ai知道Test是完全由ai编写的
+
 重构
   - ParameterHandler限制只搜索类/程序集
   - 测试的文件结构不佳
