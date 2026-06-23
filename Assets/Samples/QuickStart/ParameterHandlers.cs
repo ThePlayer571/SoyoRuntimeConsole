@@ -4,6 +4,7 @@ using Soyo.SoyoRuntimeConsole.Samples.QuickStart.ValueObjects;
 
 namespace Soyo.SoyoRuntimeConsole.Samples.QuickStart
 {
+    // 这里没有指定 TargetConsoleKey，意味着这些参数处理器适用于所有控制台
     public static class ParameterHandlers
     {
         // 定义参数处理器

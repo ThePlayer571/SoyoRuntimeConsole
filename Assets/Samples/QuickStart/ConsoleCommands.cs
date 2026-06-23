@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace Soyo.SoyoRuntimeConsole.Samples.QuickStart
 {
+    // 显式指定目标Console（如果不指定，认为是应用于所有Console）
     [TargetConsoleKey("QuickStartConsole")]
     public static class ConsoleCommands
     {

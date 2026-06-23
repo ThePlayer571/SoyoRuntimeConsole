@@ -43,5 +43,15 @@ namespace Soyo.SoyoRuntimeConsole
         {
             return Create(new ConsoleKey(key));
         }
+
+        /// <summary>
+        /// 使用默认 key 创建控制台实例。等效于 <c>Create(new ConsoleKey("DefaultConsole"))</c>。
+        /// </summary>
+        /// <returns></returns>
+        [return: NotNull]
+        public static IConsole Create()
+        {
+            return Create(new ConsoleKey("DefaultConsole"));
+        }
     }
 }
