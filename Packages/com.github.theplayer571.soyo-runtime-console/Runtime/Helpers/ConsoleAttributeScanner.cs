@@ -196,7 +196,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             {
                 var param = parameters[i];
                 var paramName = param.GetCustomAttribute<CommandParameterAttribute>()?.Name ?? param.Name;
-                parameterHandlers[i] = PreferredParameterHandler.Handler(param.ParameterType, paramName);
+                parameterHandlers[i] = PreferredParameterHandler.HandlerOf(param.ParameterType, paramName);
             }
 
             // 7. 创建命令定义

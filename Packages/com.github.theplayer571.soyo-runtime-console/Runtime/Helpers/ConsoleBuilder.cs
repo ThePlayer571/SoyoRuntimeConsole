@@ -35,7 +35,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// 设置控制台 Key。多次调用以后者为准。
         /// </summary>
         [return: NotNull]
-        public ConsoleBuilder SetConsoleKey([DisallowNull] ConsoleKey key)
+        public ConsoleBuilder SetConsoleKey(ConsoleKey key)
         {
             _key = key;
             return this;

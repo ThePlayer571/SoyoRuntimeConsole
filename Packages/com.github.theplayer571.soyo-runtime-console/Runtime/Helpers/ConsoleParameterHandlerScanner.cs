@@ -148,7 +148,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             for (int i = 0; i < methodParams.Length; i++)
             {
                 var param = methodParams[i];
-                subHandlers[i] = PreferredParameterHandler.Handler(param.ParameterType, param.Name);
+                subHandlers[i] = PreferredParameterHandler.HandlerOf(param.ParameterType, param.Name);
             }
 
             var effectiveName = name ?? targetType.Name;

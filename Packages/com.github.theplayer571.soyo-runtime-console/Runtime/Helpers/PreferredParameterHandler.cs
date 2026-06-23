@@ -7,10 +7,11 @@ using UnityEngine;
 namespace Soyo.SoyoRuntimeConsole.Helpers
 {
     // todo: 结构不良
+    // todo: 改之后这个类名语义明显不正确，你需要改
     /// <summary>
     /// 全局首选的参数处理器注册中心。
     /// 每个类型唯一对应一个首选 <see cref="IParameterHandler"/>，
-    /// 可通过 <see cref="Handler{T}(string)"/> 或 <see cref="Handler(Type, string)"/> 获取。
+    /// 可通过 <see cref="HandlerOf{T}"/> 或 <see cref="HandlerOf"/> 获取。
     /// </summary>
     /// <remarks>
     /// <para>内置注册了以下类型的处理器工厂：</para>
@@ -41,6 +42,8 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// <returns>对应类型的参数处理器实例</returns>
         public delegate IParameterHandler HandlerFactory([DisallowNull] Type type, [AllowNull] string name);
 
+        // todo：注意IMPORTANT：修改逻辑之后，Console Build之后，不再会修改Factories内容。目前的方案。每次涉及CompositeHandler，在HandlerOf中都会重新创建CompositeHandler，
+        //  而且Dictionary存的也是List，开销太大了。改之后，Build之前用的是Dictionary<Type, List<HandlerFactory>>，在Build的时候变成List<Type, HandlerFactory>，自动生成CompositeHandler工厂
         /// <summary>
         /// 存储每个类型对应的处理器工厂列表。
         /// 单一工厂直接使用；多个工厂自动组合为 <see cref="CompositeParameterHandler"/>。
@@ -48,7 +51,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         private static readonly Dictionary<Type, List<HandlerFactory>> Factories = new();
 
         /// <summary>
-        /// 懒加载标志。首次调用 <see cref="Handler(Type, string)"/> 时触发扫描。
+        /// 懒加载标志。首次调用 <see cref="HandlerOf"/> 时触发扫描。
         /// </summary>
         private static bool _initialized;
 
@@ -141,9 +144,9 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// <param name="name">参数名称（用于提示），为 null 时使用类型名</param>
         /// <returns>对应的参数处理器。若类型无注册且无法动态构造，则降级返回 StringParameterHandler。</returns>
         [return: NotNull]
-        public static IParameterHandler Handler<T>([AllowNull] string name = null)
+        public static IParameterHandler HandlerOf<T>([AllowNull] string name = null)
         {
-            return Handler(typeof(T), name);
+            return HandlerOf(typeof(T), name);
         }
 
         /// <summary>
@@ -158,7 +161,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// <param name="name">参数名称（用于提示），为 null 时使用类型名</param>
         /// <returns>对应的参数处理器</returns>
         [return: NotNull]
-        public static IParameterHandler Handler([DisallowNull] Type type, [AllowNull] string name = null)
+        public static IParameterHandler HandlerOf([DisallowNull] Type type, [AllowNull] string name = null)
         {
             // 懒加载：首次调用时扫描 [ConsoleParameterHandler]
             EnsureInitialized();
@@ -283,7 +286,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             }
 
             // 递归获取元素类型的处理器
-            var elementHandler = Handler(elementType, name);
+            var elementHandler = HandlerOf(elementType, name);
 
             // 构造 ArrayParameterHandler<T>
             var handlerType = typeof(ArrayParameterHandler<>).MakeGenericType(elementType);
