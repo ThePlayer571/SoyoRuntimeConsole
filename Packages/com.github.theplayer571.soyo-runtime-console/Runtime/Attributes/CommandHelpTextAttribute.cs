@@ -1,7 +1,6 @@
 using System;
-using Soyo.SoyoRuntimeConsole.Attributes;
 
-namespace Soyo.SoyoRuntimeConsole
+namespace Soyo.SoyoRuntimeConsole.Attributes
 {
     /// <summary>
     /// 为控制台命令提供帮助文本。

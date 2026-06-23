@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 
-namespace Soyo.SoyoRuntimeConsole
+namespace Soyo.SoyoRuntimeConsole.ValueObjects
 {
     public readonly struct Suggestion
     {

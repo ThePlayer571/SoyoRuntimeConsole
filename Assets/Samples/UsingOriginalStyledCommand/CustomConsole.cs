@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand.Commands;
+using Soyo.SoyoRuntimeConsole.ValueObjects;
 
 namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand
 {

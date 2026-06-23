@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Soyo.SoyoRuntimeConsole.Attributes;
+using Soyo.SoyoRuntimeConsole.ValueObjects;
 
 namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
 {

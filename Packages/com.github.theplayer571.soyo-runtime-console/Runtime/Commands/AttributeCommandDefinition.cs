@@ -2,8 +2,9 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Soyo.SoyoRuntimeConsole.Attributes;
+using Soyo.SoyoRuntimeConsole.ValueObjects;
 
-namespace Soyo.SoyoRuntimeConsole
+namespace Soyo.SoyoRuntimeConsole.Commands
 {
     /// <summary>
     /// 基于反射的命令定义，将标记了 <see cref="ConsoleCommandAttribute"/> 的静态方法包装为

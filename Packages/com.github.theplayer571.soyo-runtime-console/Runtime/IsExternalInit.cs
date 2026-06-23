@@ -1,4 +1,4 @@
-namespace System.Runtime.CompilerServices
+namespace Soyo.SoyoRuntimeConsole
 {
     internal static class IsExternalInit { }
 }

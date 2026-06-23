@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-namespace Soyo.SoyoRuntimeConsole
+namespace Soyo.SoyoRuntimeConsole.ValueObjects
 {
     public readonly struct CommandName : IEquatable<CommandName>
     {

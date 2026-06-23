@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using Soyo.SoyoRuntimeConsole.ParameterHandlers;
 using UnityEngine;
 
-namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
+namespace Soyo.SoyoRuntimeConsole.Helpers
 {
+    // todo: 结构不良
     /// <summary>
     /// 全局首选的参数处理器注册中心。
     /// 每个类型唯一对应一个首选 <see cref="IParameterHandler"/>，

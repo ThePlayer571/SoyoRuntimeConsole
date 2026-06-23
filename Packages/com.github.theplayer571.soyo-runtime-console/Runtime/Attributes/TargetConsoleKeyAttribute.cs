@@ -1,4 +1,5 @@
 using System;
+using ConsoleKey = Soyo.SoyoRuntimeConsole.ValueObjects.ConsoleKey;
 
 namespace Soyo.SoyoRuntimeConsole.Attributes
 {

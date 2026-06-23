@@ -4,10 +4,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using Soyo.SoyoRuntimeConsole.Attributes;
-using Soyo.SoyoRuntimeConsole.ParameterHandlers;
+using Soyo.SoyoRuntimeConsole.Commands;
+using Soyo.SoyoRuntimeConsole.ValueObjects;
 using UnityEngine;
+using ConsoleKey = Soyo.SoyoRuntimeConsole.ValueObjects.ConsoleKey;
 
-namespace Soyo.SoyoRuntimeConsole
+namespace Soyo.SoyoRuntimeConsole.Helpers
 {
     /// <summary>
     /// 控制台命令属性扫描器。

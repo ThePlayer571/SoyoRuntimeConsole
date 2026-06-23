@@ -1,3 +1,4 @@
+using Soyo.SoyoRuntimeConsole.ValueObjects;
 using UnityEngine;
 
 namespace Soyo.SoyoRuntimeConsole.ParameterHandlers

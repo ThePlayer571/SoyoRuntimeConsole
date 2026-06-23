@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Soyo.SoyoRuntimeConsole.ParameterHandlers;
+using Soyo.SoyoRuntimeConsole.ValueObjects;
 
 namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 {

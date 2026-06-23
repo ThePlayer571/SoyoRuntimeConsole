@@ -1,6 +1,7 @@
 using System.Linq;
 using NUnit.Framework;
 using Soyo.SoyoRuntimeConsole.Attributes;
+using Soyo.SoyoRuntimeConsole.ValueObjects;
 
 namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 {

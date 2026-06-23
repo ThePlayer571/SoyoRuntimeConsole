@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using Soyo.SoyoRuntimeConsole.Attributes;
+using Soyo.SoyoRuntimeConsole.Helpers;
 using Soyo.SoyoRuntimeConsole.ParameterHandlers;
 using UnityEngine;
 using UnityEngine.TestTools;

@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Soyo.SoyoRuntimeConsole.ParameterHandlers;
-using UnityEngine;
+using Soyo.SoyoRuntimeConsole.ValueObjects;
 
-namespace Soyo.SoyoRuntimeConsole
+namespace Soyo.SoyoRuntimeConsole.Helpers
 {
     /// <summary>
     /// 命令行解析器，负责把文本解析为可读性良好的数据结构。

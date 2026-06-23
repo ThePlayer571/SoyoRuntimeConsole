@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 
-namespace Soyo.SoyoRuntimeConsole
+namespace Soyo.SoyoRuntimeConsole.ValueObjects
 {
     /// <summary>
     /// 控制台的配置结构，包含命令定义和命令帮助文本。

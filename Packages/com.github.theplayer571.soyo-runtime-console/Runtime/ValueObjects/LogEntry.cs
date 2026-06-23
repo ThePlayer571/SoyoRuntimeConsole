@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Soyo.SoyoRuntimeConsole
+namespace Soyo.SoyoRuntimeConsole.ValueObjects
 {
     public readonly struct LogEntry
     {

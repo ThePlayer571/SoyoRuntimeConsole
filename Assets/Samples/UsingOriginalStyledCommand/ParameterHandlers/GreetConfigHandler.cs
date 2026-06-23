@@ -1,6 +1,7 @@
 using System.Linq;
 using Soyo.SoyoRuntimeConsole.ParameterHandlers;
 using Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand.ValueObjects;
+using Soyo.SoyoRuntimeConsole.ValueObjects;
 
 namespace Soyo.SoyoRuntimeConsole.Samples.UsingOriginalStyledCommand.ParameterHandlers
 {

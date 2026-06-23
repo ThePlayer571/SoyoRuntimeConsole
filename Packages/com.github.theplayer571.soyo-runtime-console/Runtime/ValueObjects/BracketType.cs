@@ -1,4 +1,4 @@
-namespace Soyo.SoyoRuntimeConsole.ParameterHandlers
+namespace Soyo.SoyoRuntimeConsole.ValueObjects
 {
     /// <summary>
     /// 括号类型，用于 TupleParameterHandler 指定参数包裹的括号样式。

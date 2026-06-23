@@ -4,9 +4,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using Soyo.SoyoRuntimeConsole.Attributes;
+using Soyo.SoyoRuntimeConsole.ValueObjects;
 using UnityEngine;
+using ConsoleKey = Soyo.SoyoRuntimeConsole.ValueObjects.ConsoleKey;
 
-namespace Soyo.SoyoRuntimeConsole
+namespace Soyo.SoyoRuntimeConsole.Helpers
 {
     /// <summary>
     /// 控制台构建器。提供流畅的 Builder API 来构建 <see cref="ConsoleConfig"/> 和 <see cref="IConsole"/>。

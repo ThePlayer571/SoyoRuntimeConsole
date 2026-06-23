@@ -1,3 +1,4 @@
+using Soyo.SoyoRuntimeConsole.ValueObjects;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
