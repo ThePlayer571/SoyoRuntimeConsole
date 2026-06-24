@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Soyo.SoyoRuntimeConsole.ValueObjects;
 using UnityEngine;
+using ConsoleKey = Soyo.SoyoRuntimeConsole.ValueObjects.ConsoleKey;
 
 namespace Soyo.SoyoRuntimeConsole
 {
@@ -344,6 +345,22 @@ namespace Soyo.SoyoRuntimeConsole
         {
             _console = console;
             Application.logMessageReceived += HandleLog;
+        }
+
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        /// <param name="consoleKey"></param>
+        public ConsoleViewModel(ConsoleKey consoleKey) : this(Console.Create(consoleKey))
+        {
+        }
+
+        /// <summary>
+        /// 构造函数。
+        /// </summary>
+        /// <param name="consoleKey"></param>
+        public ConsoleViewModel([DisallowNull] string consoleKey) : this(new ConsoleKey(consoleKey))
+        {
         }
 
         /// <summary>
