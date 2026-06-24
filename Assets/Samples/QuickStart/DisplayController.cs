@@ -91,7 +91,8 @@ namespace Soyo.SoyoRuntimeConsole.Samples.QuickStart
                 if (GUILayout.Button("AutoComplete", GUILayout.Width(100)))
                 {
                     // Try autocomplete and, if it produced a new input, write it back to the component
-                    var success = _editorViewModel.AutoComplete(_autoCompleteIndex);
+                    _editorViewModel.CandidateIndex = _autoCompleteIndex;
+                    var success = _editorViewModel.AutoComplete();
                     if (success)
                     {
                         dc.input = _editorViewModel.InputText;
@@ -107,7 +108,7 @@ namespace Soyo.SoyoRuntimeConsole.Samples.QuickStart
                 _historyIndex = EditorGUILayout.IntField(_historyIndex);
                 if (GUILayout.Button("Recover History", GUILayout.Width(100)))
                 {
-                    var history = _editorViewModel.GetHistory();
+                    var history = _editorViewModel.CommandHistory;
                     if (history != null && _historyIndex >= 0 && _historyIndex < history.Count)
                     {
                         dc.input = history[_historyIndex];
