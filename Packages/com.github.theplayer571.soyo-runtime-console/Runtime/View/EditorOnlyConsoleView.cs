@@ -28,6 +28,14 @@ namespace Soyo.SoyoRuntimeConsole.View
         public string consoleKey = string.Empty;
 
         /// <summary>
+        /// 可选的 <see cref="ConsoleProvider"/> ScriptableObject。设置此值后，控制台将通过
+        /// <see cref="ConsoleProvider.CreateConsole"/> 创建，而非使用 <see cref="consoleKey"/>。
+        /// 优先级高于 <see cref="consoleKey"/>。
+        /// </summary>
+        [AllowNull]
+        public ConsoleProvider consoleProvider;
+
+        /// <summary>
         /// 运行时 <see cref="ConsoleViewModel"/> 实例。通过此字段直接访问控制台的所有 API。
         /// </summary>
         [AllowNull]
@@ -39,6 +47,9 @@ namespace Soyo.SoyoRuntimeConsole.View
 
         [AllowNull]
         private string _lastConsoleKey;
+
+        [AllowNull]
+        private ConsoleProvider _lastConsoleProvider;
 
         #endregion
 
@@ -60,8 +71,8 @@ namespace Soyo.SoyoRuntimeConsole.View
 
         private void OnValidate()
         {
-            // 检测 consoleKey 变化并重建 ViewModel
-            if (consoleKey != _lastConsoleKey)
+            // 检测 consoleKey / consoleProvider 变化并重建 ViewModel
+            if (consoleKey != _lastConsoleKey || consoleProvider != _lastConsoleProvider)
             {
                 if (viewModel != null)
                 {
@@ -71,6 +82,7 @@ namespace Soyo.SoyoRuntimeConsole.View
 
                 EnsureViewModel();
                 _lastConsoleKey = consoleKey;
+                _lastConsoleProvider = consoleProvider;
             }
         }
 
@@ -78,12 +90,41 @@ namespace Soyo.SoyoRuntimeConsole.View
 
         #region 私有方法
 
+        /// <summary>
+        /// 创建 <see cref="IConsole"/> 实例。子类可重写此方法以提供自定义控制台。
+        /// </summary>
+        /// <remarks>
+        /// 优先级：<see cref="consoleProvider"/> &gt; <see cref="consoleKey"/>。
+        /// 如果两者都未配置，返回 null。
+        /// </remarks>
+        /// <returns>控制台实例；如果未配置任何控制台源则返回 null。</returns>
+        [return: MaybeNull]
+        protected virtual IConsole CreateConsole()
+        {
+            if (consoleProvider != null)
+            {
+                return consoleProvider.CreateConsole();
+            }
+
+            if (!string.IsNullOrEmpty(consoleKey))
+            {
+                return Console.Create(consoleKey);
+            }
+
+            return null;
+        }
+
         private void EnsureViewModel()
         {
-            if (viewModel == null && !string.IsNullOrEmpty(consoleKey))
+            if (viewModel != null)
+                return;
+
+            var console = CreateConsole();
+            if (console != null)
             {
-                viewModel = new ConsoleViewModel(consoleKey);
+                viewModel = new ConsoleViewModel(console);
                 _lastConsoleKey = consoleKey;
+                _lastConsoleProvider = consoleProvider;
             }
         }
 
@@ -121,7 +162,13 @@ namespace Soyo.SoyoRuntimeConsole.View
             private SerializedProperty _consoleKeyProp;
 
             [AllowNull]
+            private SerializedProperty _consoleProviderProp;
+
+            [AllowNull]
             private string _lastEditorConsoleKey;
+
+            [AllowNull]
+            private ConsoleProvider _lastEditorConsoleProvider;
 
             #endregion
 
@@ -130,15 +177,14 @@ namespace Soyo.SoyoRuntimeConsole.View
             private void OnEnable()
             {
                 _consoleKeyProp = serializedObject.FindProperty("consoleKey");
+                _consoleProviderProp = serializedObject.FindProperty("consoleProvider");
 
-                var key = _consoleKeyProp?.stringValue ?? string.Empty;
-                _lastEditorConsoleKey = key;
+                _lastEditorConsoleKey = _consoleKeyProp?.stringValue ?? string.Empty;
+                _lastEditorConsoleProvider =
+                    (ConsoleProvider)(_consoleProviderProp?.objectReferenceValue ?? null);
 
-                // 如果存在可用的 consoleKey，自动创建 ViewModel
-                if (!string.IsNullOrEmpty(key))
-                {
-                    CreateEditorViewModel(key);
-                }
+                // 自动创建 Editor ViewModel
+                CreateEditorViewModel();
 
                 EditorApplication.update += Repaint;
             }
@@ -157,25 +203,31 @@ namespace Soyo.SoyoRuntimeConsole.View
             {
                 serializedObject.Update();
 
-                // 手动绘制 consoleKey 字段
+                // 手动绘制 consoleKey 和 consoleProvider 字段
                 EditorGUILayout.PropertyField(_consoleKeyProp);
+                EditorGUILayout.PropertyField(_consoleProviderProp);
 
                 // 显式生成 ViewModel 按钮
-                EditorGUI.BeginDisabledGroup(string.IsNullOrEmpty(_consoleKeyProp?.stringValue ?? string.Empty));
+                var hasProvider = _consoleProviderProp?.objectReferenceValue != null;
+                var hasKey = !string.IsNullOrEmpty(_consoleKeyProp?.stringValue ?? string.Empty);
+                EditorGUI.BeginDisabledGroup(!hasProvider && !hasKey);
                 if (GUILayout.Button("Create ViewModel"))
                 {
-                    CreateEditorViewModel(_consoleKeyProp?.stringValue ?? string.Empty);
+                    CreateEditorViewModel();
                 }
                 EditorGUI.EndDisabledGroup();
 
                 serializedObject.ApplyModifiedProperties();
 
-                // 检测 consoleKey 变化 → 废弃旧 ViewModel
+                // 检测 consoleKey / consoleProvider 变化 → 废弃旧 ViewModel
                 var currentKey = _consoleKeyProp?.stringValue ?? string.Empty;
-                if (currentKey != _lastEditorConsoleKey)
+                var currentProvider =
+                    (ConsoleProvider)(_consoleProviderProp?.objectReferenceValue ?? null);
+                if (currentKey != _lastEditorConsoleKey || currentProvider != _lastEditorConsoleProvider)
                 {
                     DisposeEditorViewModel();
                     _lastEditorConsoleKey = currentKey;
+                    _lastEditorConsoleProvider = currentProvider;
                 }
 
                 // ViewModel 不可用
@@ -474,13 +526,15 @@ namespace Soyo.SoyoRuntimeConsole.View
 
             #region 私有方法
 
-            private void CreateEditorViewModel([DisallowNull] string key)
+            private void CreateEditorViewModel()
             {
                 DisposeEditorViewModel();
 
-                if (!string.IsNullOrEmpty(key))
+                var view = (EditorOnlyConsoleView)target;
+                var console = view.CreateConsole();
+                if (console != null)
                 {
-                    _editorViewModel = new ConsoleViewModel(key);
+                    _editorViewModel = new ConsoleViewModel(console);
                 }
 
                 _inputText = string.Empty;
