@@ -3,11 +3,14 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Soyo.SoyoRuntimeConsole
 {
+    /// <summary>
+    /// 参数Handler，处理参数的逻辑。不应存在状态。约定：每个参数都应该以空格为结尾
+    /// </summary>
     public interface IParameterHandler
     {
         /// <summary>
         /// 参数的描述信息，用于提示。
-        /// 注意：Name和Type是MaybeNull的，意味着它们是否为null暗示了某些信息
+        /// 注意：Name和Type是MaybeNull的，意味着它们是否为null暗示了某些信息。
         /// </summary>
         public readonly struct Description
         {

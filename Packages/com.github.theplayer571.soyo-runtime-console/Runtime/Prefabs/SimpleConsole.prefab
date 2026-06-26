@@ -116,8 +116,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   showOnStart: 0
+  dontDestroyOnLoad: 1
   toggleVisibilityKey: 282
-  consoleProvider: {fileID: 11400000, guid: fdfb2766338116d47b804dab52f8fdf0, type: 2}
+  consoleProvider: {fileID: 0}
   view: {fileID: 7997191844282937076}
   inputField: {fileID: 2855714788972423562}
   outputField: {fileID: 794571477196175519}
