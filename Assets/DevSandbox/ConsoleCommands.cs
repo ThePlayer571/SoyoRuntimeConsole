@@ -20,6 +20,7 @@ namespace Soyo.SoyoRuntimeConsole.DevSandbox
     [TargetConsoleKey("DevSandboxConsole")]
     public static class ConsoleCommands
     {
+        [CommandHelpText("test parameters")]
         [ConsoleCommand]
         public static void test(bool value)
         {
@@ -46,21 +47,15 @@ namespace Soyo.SoyoRuntimeConsole.DevSandbox
         }
 
         [ConsoleCommand]
-        public static void test(Vector2 value)
-        {
-            Debug.Log($"Vector2: {value}");
-        }
-
-        [ConsoleCommand]
         public static void test(Vector2Int value)
         {
             Debug.Log($"Vector2Int: {value}");
         }
 
         [ConsoleCommand]
-        public static void test(Vector3 value)
+        public static void test(Vector2 value)
         {
-            Debug.Log($"Vector3: {value}");
+            Debug.Log($"Vector2: {value}");
         }
 
         [ConsoleCommand]
@@ -69,6 +64,12 @@ namespace Soyo.SoyoRuntimeConsole.DevSandbox
             Debug.Log($"Vector3Int: {value}");
         }
 
+        [ConsoleCommand]
+        public static void test(Vector3 value)
+        {
+            Debug.Log($"Vector3: {value}");
+        }
+        
         [ConsoleCommand]
         public static void test(Vector4 value)
         {
@@ -127,6 +128,18 @@ namespace Soyo.SoyoRuntimeConsole.DevSandbox
         public static void test(string value)
         {
             Debug.Log($"string: \"{value}\"");
+        }
+        
+        [ConsoleCommand]
+        public static void test(int a, int b)
+        {
+            Debug.Log($"int a: {a}, int b: {b}");
+        }
+        
+        [ConsoleCommand]
+        public static void other_test(int value)
+        {
+            Debug.Log($"other_test: {value}");
         }
     }
 }

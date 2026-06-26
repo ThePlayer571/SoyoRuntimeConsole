@@ -13,8 +13,6 @@ namespace Soyo.SoyoRuntimeConsole.ValueObjects
             [AllowNull] public string HelpText { get; }
             [MaybeNull] public IReadOnlyList<IParameterHandler.Description> ParameterDescriptions { get; }
             [MaybeNull] public IReadOnlyList<string> Candidates { get; }
-
-
             public ConsoleCommandDesc AnalyzeResult { get; }
 
             public CommandInfo(

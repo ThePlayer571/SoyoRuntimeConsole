@@ -2,6 +2,9 @@
 
 ```
 
+规范：所有参数必须以空格结尾
+
+把Prefab移出Runtime，这样Runtime就不依赖TMP了
 
 CommandLineAnalyzer 缓存分析数据
 - ConsoleCommandDesc注释改成中文的

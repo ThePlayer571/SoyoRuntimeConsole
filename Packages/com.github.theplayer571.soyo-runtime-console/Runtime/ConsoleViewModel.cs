@@ -37,6 +37,7 @@ namespace Soyo.SoyoRuntimeConsole
         /// <param name="text"></param>
         public virtual void SetInputText([DisallowNull] string text)
         {
+            CandidateIndex = 0;
             _console.SetInputText(text);
             _suggestionCache = null;
         }
@@ -50,10 +51,16 @@ namespace Soyo.SoyoRuntimeConsole
         /// </summary>
         public virtual void SendInput()
         {
-            RecordHistory(InputText);
-            _console.SendInput();
+            var inputText = _console.InputText;
+            RecordHistory(InputText);       
+            var success = _console.SendInput();
             _console.SetInputText(string.Empty);
             _suggestionCache = null;
+
+            if (!success)
+            {
+                Debug.LogWarning($"Console: Failed to send input: '{inputText}'");
+            }
         }
 
         #endregion
@@ -101,16 +108,17 @@ namespace Soyo.SoyoRuntimeConsole
         public virtual bool AutoComplete()
         {
             var suggestion = GetSuggestion();
+            var candidateIndex = CandidateIndex;
 
             // 提前退出
             var candidates = suggestion.Candidates;
-            if (candidates == null || CandidateIndex < 0 || CandidateIndex >= candidates.Count ||
+            if (candidates == null || candidateIndex < 0 || candidateIndex >= candidates.Count ||
                 suggestion.CandidateCommands == null)
             {
                 return false;
             }
 
-            var chosenCandidate = candidates[CandidateIndex];
+            var chosenCandidate = candidates[candidateIndex];
 
             switch (suggestion.State)
             {
@@ -307,9 +315,9 @@ namespace Soyo.SoyoRuntimeConsole
         #region Log 记录
 
         /// <summary>
-        /// 是否记录 <see cref="LogEntry"/>。默认 false。
+        /// 是否记录 <see cref="LogEntry"/>。默认 true。
         /// </summary>
-        public bool RecordLogEntries { get; set; }
+        public bool RecordLogEntries { get; set; } = true;
 
         /// <summary>
         /// Log 记录最大条数。默认 100。

@@ -40,7 +40,10 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                     // 先按照是否以commandName开头进行排序，再按照首字母排序
                     orderby commandDefinition.CommandName.Name.StartsWith(inputCommandName) descending,
                         commandDefinition.CommandName.Name
-                    select new ConsoleCommandDesc(commandDefinition, Array.Empty<string>(),
+                    select new ConsoleCommandDesc(
+                        commandDefinition,
+                        Array.Empty<string>(),
+                        0,
                         commandDefinition.ParameterHandlers.Count == 0 &&
                         commandDefinition.CommandName.Name == inputCommandName);
 
@@ -76,7 +79,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             {
                 if (string.IsNullOrEmpty(parametersInput))
                 {
-                    return new ConsoleCommandDesc(commandDefinition, Array.Empty<string>(), true);
+                    return new ConsoleCommandDesc(commandDefinition, Array.Empty<string>(), 0, true);
                 }
                 else
                 {
@@ -96,7 +99,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                 if (string.IsNullOrEmpty(leftInput))
                 {
                     parameters.Add(string.Empty);
-                    return new ConsoleCommandDesc(commandDefinition, parameters, false);
+                    return new ConsoleCommandDesc(commandDefinition, parameters, parameters.Count - 1, false);
                 }
 
                 leftInput = CutLeftStringWhenShouldAdvanceOrHasNoInput(leftInput, parameterHandler,
@@ -125,7 +128,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                         else
                         {
                             parameters.Add(slice);
-                            return new ConsoleCommandDesc(commandDefinition, parameters, false);
+                            return new ConsoleCommandDesc(commandDefinition, parameters, parameters.Count - 1, false);
                         }
                     }
                 }
@@ -137,10 +140,12 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                 {
                     // !cutByAdvance => !hasLeftInput
                     // executable = 全部参数解析完了
-                    bool executable = index == commandDefinition.ParameterHandlers.Count - 1;
-
+                    var executable = index == commandDefinition.ParameterHandlers.Count - 1;
+                    
                     parameters.Add(slice);
-                    return new ConsoleCommandDesc(commandDefinition, parameters, executable);
+
+                    var validParameterCount = parameters.Count;
+                    return new ConsoleCommandDesc(commandDefinition, parameters, validParameterCount, executable);
                 }
 
                 // advance，分析下一个参数
@@ -154,7 +159,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             }
 
             // handler遍历完了，参数也都IsValid：分析通过
-            return new ConsoleCommandDesc(commandDefinition, parameters, true);
+            return new ConsoleCommandDesc(commandDefinition, parameters, parameters.Count, true);
 
             // returns: 裁剪后的leftString
             [return: NotNull]
