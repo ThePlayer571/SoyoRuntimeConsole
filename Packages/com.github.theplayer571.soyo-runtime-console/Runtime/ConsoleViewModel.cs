@@ -315,9 +315,9 @@ namespace Soyo.SoyoRuntimeConsole
         #region Log 记录
 
         /// <summary>
-        /// 是否记录 <see cref="LogEntry"/>。默认 true。
+        /// 是否记录 <see cref="LogEntry"/>。默认 false，需要手动开启。
         /// </summary>
-        public bool RecordLogEntries { get; set; } = true;
+        public bool RecordLogEntries { get; set; } = false;
 
         /// <summary>
         /// Log 记录最大条数。默认 100。

@@ -268,6 +268,29 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                     handlers[i] = _registry.HandlerOf(param.ParameterType, paramName);
                 }
 
+                // 检查是否有未能初始化的处理器，若存在则跳过整个命令
+                var hasUninitializedHandler = false;
+                for (int i = 0; i < handlers.Length; i++)
+                {
+                    var handler = handlers[i];
+                    if (handler is { IsInitialized: false })
+                    {
+                        hasUninitializedHandler = true;
+                        var param = paramInfos[i];
+                        Debug.LogWarning(
+                            $"[ConsoleBuilder] Command '{pending.CommandName.Name}' parameter " +
+                            $"'{param.Name}' (type: {param.ParameterType.Name}): the resolved " +
+                            $"IParameterHandler ({handler.GetType().Name}) has IsInitialized = false. " +
+                            $"The command will be skipped and will not be available in the console. " +
+                            $"Ensure the handler sets IsInitialized to true after successful construction.");
+                    }
+                }
+
+                if (hasUninitializedHandler)
+                {
+                    continue;
+                }
+
                 var command = new AttributeCommandDefinition(pending.Method, pending.CommandName, handlers);
                 _commands.Add(command);
             }

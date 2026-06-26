@@ -127,18 +127,8 @@ ParameterHandlerBase 来定义参数解析器。
 
 ### 使用ConsoleBuilder
 
-TODO
-
 ConsoleBuilder 设计是为了提高性能和可扩展性。
 
 使用 `new ConsoleViewModel()` 和 `Console.Create()` 创建 Console 时会遍历所有程序集，造成性能损耗。
 
-可以使用 ConsoleBuilder 来限定扫描范围：
-
-```csharp
-
-public ConsoleViewModel CreateConsole()
-{
-    return new ConsoleBuilder()
-    
-}
+可以使用 ConsoleBuilder 来限定扫描范围，示例见 Samples/UsingConsoleBuilder。示例包含完善的注释引导。

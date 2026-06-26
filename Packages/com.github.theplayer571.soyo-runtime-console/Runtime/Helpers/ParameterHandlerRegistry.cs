@@ -44,7 +44,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// <param name="type">需要处理的类型</param>
         /// <param name="name">参数名称（用于提示），可为 null</param>
         /// <returns>对应类型的参数处理器实例</returns>
-        public delegate IParameterHandler HandlerFactory([DisallowNull] Type type, [AllowNull] string name);
+        public delegate IParameterHandler HandlerFactory([DisallowNull] Type type, [DisallowNull] string name);
 
         /// <summary>
         /// 动态处理器工厂委托。接收目标类型和参数名称，若该委托能处理此类型则返回对应的 <see cref="IParameterHandler"/> 实例，
@@ -54,7 +54,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// <param name="name">参数名称（用于提示），可为 null</param>
         /// <returns>若能处理则返回处理器实例，否则返回 null</returns>
         [return: MaybeNull]
-        public delegate IParameterHandler DynamicHandlerFactory([DisallowNull] Type type, [AllowNull] string name);
+        public delegate IParameterHandler DynamicHandlerFactory([DisallowNull] Type type, [DisallowNull] string name);
 
         /// <summary>
         /// 可变阶段：存储每个类型对应的处理器工厂列表。
@@ -103,27 +103,27 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         private void RegisterBuiltinHandlers()
         {
             // 基础类型
-            Register<string>((_, name) => new StringParameterHandler(name ?? "String"));
-            Register<int>((_, name) => new IntegerParameterHandler(name ?? "Integer"));
-            Register<float>((_, name) => new FloatParameterHandler(name ?? "Float"));
-            Register<bool>((_, name) => new BooleanParameterHandler(name ?? "Boolean"));
+            Register<string>((_, name) => new StringParameterHandler(name ?? "string"));
+            Register<int>((_, name) => new IntegerParameterHandler(name ?? "integer"));
+            Register<float>((_, name) => new FloatParameterHandler(name ?? "float"));
+            Register<bool>((_, name) => new BooleanParameterHandler(name ?? "boolean"));
 
             // Unity 数学类型 — type 固定，name 可自定义
-            Register<Vector2>((_, name) => new Vector2ParameterHandler(name ?? "Vector2"));
-            Register<Vector2Int>((_, name) => new Vector2IntParameterHandler(name ?? "Vector2Int"));
-            Register<Vector3>((_, name) => new Vector3ParameterHandler(name ?? "Vector3"));
-            Register<Vector3Int>((_, name) => new Vector3IntParameterHandler(name ?? "Vector3Int"));
-            Register<Vector4>((_, name) => new Vector4ParameterHandler(name ?? "Vector4"));
+            Register<Vector2>((_, name) => new Vector2ParameterHandler(name ?? "vector2"));
+            Register<Vector2Int>((_, name) => new Vector2IntParameterHandler(name ?? "vector2int"));
+            Register<Vector3>((_, name) => new Vector3ParameterHandler(name ?? "vector3"));
+            Register<Vector3Int>((_, name) => new Vector3IntParameterHandler(name ?? "vector3int"));
+            Register<Vector4>((_, name) => new Vector4ParameterHandler(name ?? "vector4"));
 
             // Unity 几何/颜色类型
-            Register<Rect>((_, name) => new RectParameterHandler(name ?? "Rect"));
-            Register<RectInt>((_, name) => new RectIntParameterHandler(name ?? "RectInt"));
-            Register<Bounds>((_, name) => new BoundsParameterHandler(name ?? "Bounds"));
-            Register<BoundsInt>((_, name) => new BoundsIntParameterHandler(name ?? "BoundsInt"));
-            Register<Color>((_, name) => new ColorParameterHandler(name ?? "Color"));
+            Register<Rect>((_, name) => new RectParameterHandler(name ?? "rect"));
+            Register<RectInt>((_, name) => new RectIntParameterHandler(name ?? "rect_int"));
+            Register<Bounds>((_, name) => new BoundsParameterHandler(name ?? "bounds"));
+            Register<BoundsInt>((_, name) => new BoundsIntParameterHandler(name ?? "bounds_int"));
+            Register<Color>((_, name) => new ColorParameterHandler(name ?? "color"));
 
             // System 类型
-            Register<Guid>((_, name) => new GuidParameterHandler(name ?? "Guid"));
+            Register<Guid>((_, name) => new GuidParameterHandler(name ?? "guid"));
         }
 
         #endregion

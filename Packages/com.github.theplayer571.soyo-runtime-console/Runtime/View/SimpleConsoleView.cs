@@ -150,7 +150,7 @@ namespace Soyo.SoyoRuntimeConsole.View
 
                                 var coloredParameter = Highlight(candidate, lastInput);
                                 sb.Append(coloredParameter);
-                                
+
                                 sb.AppendLine();
                             }
 
@@ -264,6 +264,9 @@ namespace Soyo.SoyoRuntimeConsole.View
         [Header("Configs")] [SerializeField] private bool showOnStart = false;
         [SerializeField] private bool dontDestroyOnLoad = true;
         [SerializeField] private KeyCode toggleVisibilityKey = KeyCode.F1;
+        [SerializeField] private int recordLogEntriesCount = 10;
+        [SerializeField] private bool showStackTraceOnStart = false;
+        [SerializeField] private bool allowTabForStackTrace = true;
         [SerializeField] private ConsoleProvider consoleProvider;
 
 
@@ -289,12 +292,16 @@ namespace Soyo.SoyoRuntimeConsole.View
 
             var console = CreateConsole();
             _viewModel = new ConsoleViewModel(console);
+            _viewModel.RecordLogEntries = true;
+            _viewModel.MaxLogEntries = recordLogEntriesCount;
+
             _outputView = new OutputView(this);
 
             inputField.onValueChanged.AddListener(OnValueChanged);
             _viewModel.OnLogEntry += OnLogEntry;
 
             _outputView.RebuildView();
+            _outputView.ShowStackTrace = showStackTraceOnStart;
 
             view.gameObject.SetActive(_showConsole);
         }
@@ -314,7 +321,10 @@ namespace Soyo.SoyoRuntimeConsole.View
                 }
                 else
                 {
-                    _outputView.ShowStackTrace = !_outputView.ShowStackTrace;
+                    if (allowTabForStackTrace)
+                    {
+                        _outputView.ShowStackTrace = !_outputView.ShowStackTrace;
+                    }
                 }
             }
 
@@ -339,6 +349,7 @@ namespace Soyo.SoyoRuntimeConsole.View
             if (Input.GetKeyDown(toggleVisibilityKey))
             {
                 _showConsole = !_showConsole;
+                inputField.SetTextWithoutNotify(string.Empty);
                 view.gameObject.SetActive(_showConsole);
             }
         }

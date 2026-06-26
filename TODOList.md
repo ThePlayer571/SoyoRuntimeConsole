@@ -1,6 +1,12 @@
 ## AI不要读这部分！
 
 ```
+支持使用类型绑定ParameterHandler。
+
+在ConsoleBuilder中，现在想自定义ParameterHandler，只能使用DynamicParameterHandler，我希望添加一个支持类型绑定的ParameterHandler，
+效果和用 [ConsoleParameterHandler] 一样，相当与注册一个和类型绑定的ParameterHandler，Register<T>(ParameterHandler的工厂)。
+
+
 
 把Prefab移出Runtime，这样Runtime就不依赖TMP了
 
