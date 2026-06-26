@@ -208,10 +208,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         {
             var invalidConfig = default(ConsoleConfig); // IsValid = false
 
-            Assert.DoesNotThrow(() =>
-            {
-                new ConsoleBuilder().RegisterConsoleConfig(invalidConfig);
-            });
+            Assert.DoesNotThrow(() => { new ConsoleBuilder().RegisterConsoleConfig(invalidConfig); });
         }
 
         #endregion
@@ -365,6 +362,178 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 
             Assert.IsNotNull(console);
             Assert.That(console.Key, Is.EqualTo(new ConsoleKey("Tests")));
+        }
+
+        #endregion
+
+        #region Register&lt;T&gt; — 类型绑定注册
+
+        /// <summary>
+        /// 用于类型绑定注册测试的自定义类型。
+        /// </summary>
+        public struct RegisterTestValue
+        {
+            public int Value;
+        }
+
+        /// <summary>
+        /// 用于类型绑定注册测试的自定义参数处理器。
+        /// </summary>
+        private class RegisterTestValueHandler : SpaceSplitParameterHandlerBase
+        {
+            public RegisterTestValueHandler(string name) : base(name, "RegisterTestValueHandler")
+            {
+            }
+
+            public override IEnumerable<string> GetCandidates(string parameter)
+            {
+                yield break;
+            }
+
+            public override bool IsValid(string parameter)
+            {
+                return int.TryParse(parameter, out _);
+            }
+
+            public override object Parse(string parameter)
+            {
+                return new RegisterTestValue { Value = int.Parse(parameter) };
+            }
+
+            public override bool IsInitialized => true;
+        }
+
+        /// <summary>
+        /// 包含使用 RegisterTestValue 类型的命令的 Fixture。
+        /// </summary>
+        [TargetConsoleKey("Tests")]
+        private class RegisterTestCommands
+        {
+            public static RegisterTestValue LastValue { get; set; }
+
+            [ConsoleCommand("register_test_cmd")]
+            [CommandHelpText("Test command using RegisterTestValue.")]
+            private static void TestCommand(RegisterTestValue value)
+            {
+                LastValue = value;
+                Debug.Log($"RegisterTestCommand: value={value.Value}");
+            }
+        }
+
+        [Test]
+        public void RegisterT_HandlerFactory_FluentApi_ReturnsBuilder()
+        {
+            var builder = new ConsoleBuilder()
+                .Register<RegisterTestValue>((type, name) => new RegisterTestValueHandler(name));
+
+            Assert.DoesNotThrow(() => builder.Build());
+        }
+
+        [Test]
+        public void RegisterT_HandlerFactory_CommandResolvesHandlerCorrectly()
+        {
+            var console = new ConsoleBuilder()
+                .SetConsoleKey("Tests")
+                .Register<RegisterTestValue>((type, name) => new RegisterTestValueHandler(name))
+                .RegisterFromClass<RegisterTestCommands>()
+                .Build();
+
+            // 验证命令已注册
+            Assert.That(console.Commands.Any(c => c.CommandName.Name == "register_test_cmd"), Is.True);
+
+            // 验证参数处理器类型正确（不是降级的 StringParameterHandler）
+            var cmd = console.Commands.First(c => c.CommandName.Name == "register_test_cmd");
+            Assert.That(cmd.ParameterHandlers.Count, Is.EqualTo(1));
+            Assert.That(cmd.ParameterHandlers[0], Is.InstanceOf<RegisterTestValueHandler>());
+        }
+
+        [Test]
+        public void RegisterT_HandlerFactory_ExecutesSuccessfully()
+        {
+            RegisterTestCommands.LastValue = default;
+
+            var console = new ConsoleBuilder()
+                .SetConsoleKey("Tests")
+                .Register<RegisterTestValue>((type, name) => new RegisterTestValueHandler(name))
+                .RegisterFromClass<RegisterTestCommands>()
+                .Build();
+
+            LogAssert.Expect(LogType.Log, "RegisterTestCommand: value=42");
+            console.SetInputText("register_test_cmd 42");
+            Assert.IsTrue(console.SendInput());
+            Assert.That(RegisterTestCommands.LastValue.Value, Is.EqualTo(42));
+        }
+
+        [Test]
+        public void RegisterT_HandlerFactory_MultipleRegistrations_ComposedAsComposite()
+        {
+            // 同一类型注册多个工厂 — 自动组合为 CompositeParameterHandler
+            var console = new ConsoleBuilder()
+                .SetConsoleKey("Tests")
+                .Register<RegisterTestValue>((type, name) => new RegisterTestValueHandler(name))
+                .Register<RegisterTestValue>((type, name) => new RegisterTestValueHandler(name + "_alt"))
+                .RegisterFromClass<RegisterTestCommands>()
+                .Build();
+
+            var cmd = console.Commands.First(c => c.CommandName.Name == "register_test_cmd");
+            Assert.That(cmd.ParameterHandlers[0], Is.InstanceOf<CompositeParameterHandler>());
+        }
+
+        [Test]
+        public void Register_NonGeneric_TypeParameter_WorksSameAsGeneric()
+        {
+            var console = new ConsoleBuilder()
+                .SetConsoleKey("Tests")
+                .Register(typeof(RegisterTestValue), (type, name) => new RegisterTestValueHandler(name))
+                .RegisterFromClass<RegisterTestCommands>()
+                .Build();
+
+            var cmd = console.Commands.First(c => c.CommandName.Name == "register_test_cmd");
+            Assert.That(cmd.ParameterHandlers[0], Is.InstanceOf<RegisterTestValueHandler>());
+        }
+
+        [Test]
+        public void RegisterT_HandlerInstance_ConvenienceOverload()
+        {
+            var handlerInstance = new RegisterTestValueHandler("my_value");
+
+            var console = new ConsoleBuilder()
+                .SetConsoleKey("Tests")
+                .Register<RegisterTestValue>(handlerInstance)
+                .RegisterFromClass<RegisterTestCommands>()
+                .Build();
+
+            var cmd = console.Commands.First(c => c.CommandName.Name == "register_test_cmd");
+            Assert.That(cmd.ParameterHandlers[0], Is.SameAs(handlerInstance));
+        }
+
+        [Test]
+        public void RegisterT_BuilderIsolation_DoesNotLeakToOtherBuilder()
+        {
+            // Builder 1: 注册自定义类型处理器
+            var builder1 = new ConsoleBuilder()
+                .SetConsoleKey("Tests")
+                .Register<RegisterTestValue>((type, name) => new RegisterTestValueHandler(name))
+                .RegisterFromClass<RegisterTestCommands>();
+            var console1 = builder1.Build();
+
+            // Builder 2: 不注册自定义处理器
+            var builder2 = new ConsoleBuilder()
+                .SetConsoleKey("Tests")
+                .RegisterFromClass<RegisterTestCommands>();
+            var console2 = builder2.Build();
+
+            // 两个 Builder 都有 register_test_cmd 命令
+            Assert.That(console1.Commands.Any(c => c.CommandName.Name == "register_test_cmd"), Is.True);
+            Assert.That(console2.Commands.Any(c => c.CommandName.Name == "register_test_cmd"), Is.True);
+
+            // console1 使用自定义处理器
+            var cmd1 = console1.Commands.First(c => c.CommandName.Name == "register_test_cmd");
+            Assert.That(cmd1.ParameterHandlers[0], Is.InstanceOf<RegisterTestValueHandler>());
+
+            // console2 降级为 StringParameterHandler（未注册自定义处理器）
+            var cmd2 = console2.Commands.First(c => c.CommandName.Name == "register_test_cmd");
+            Assert.That(cmd2.ParameterHandlers[0], Is.InstanceOf<StringParameterHandler>());
         }
 
         #endregion

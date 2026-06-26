@@ -192,6 +192,65 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         }
 
         /// <summary>
+        /// 为泛型类型 <typeparamref name="T"/> 注册类型绑定的参数处理器工厂。
+        /// 效果与使用 <see cref="ConsoleParameterHandlerAttribute"/> 特性相同。
+        /// 若该类型已注册工厂，新工厂将被追加（多个工厂在构建时自动组合为 CompositeParameterHandler）。
+        /// 仅在 <see cref="Build"/> 或 <see cref="BuildConfig"/> 之前有效（<see cref="ParameterHandlerRegistry.Freeze"/> 之后不可再注册）。
+        /// </summary>
+        /// <typeparam name="T">目标类型</typeparam>
+        /// <param name="factory">处理器工厂委托，接收目标类型和参数名称，返回对应的 <see cref="IParameterHandler"/> 实例</param>
+        /// <returns>当前的 ConsoleBuilder 实例（用于链式调用）</returns>
+        /// <example>
+        /// <code>
+        /// var console = new ConsoleBuilder()
+        ///     .Register&lt;MyType&gt;((type, name) => new MyTypeParameterHandler(name))
+        ///     .RegisterFromClass&lt;MyCommands&gt;()
+        ///     .Build();
+        /// </code>
+        /// </example>
+        [return: NotNull]
+        public ConsoleBuilder Register<T>(
+            [DisallowNull] ParameterHandlerRegistry.HandlerFactory factory)
+        {
+            _registry.Register<T>(factory);
+            return this;
+        }
+
+        /// <summary>
+        /// 为指定类型注册类型绑定的参数处理器工厂。
+        /// 效果与使用 <see cref="ConsoleParameterHandlerAttribute"/> 特性相同。
+        /// 若该类型已注册工厂，新工厂将被追加（多个工厂在构建时自动组合为 CompositeParameterHandler）。
+        /// 仅在 <see cref="Build"/> 或 <see cref="BuildConfig"/> 之前有效（<see cref="ParameterHandlerRegistry.Freeze"/> 之后不可再注册）。
+        /// </summary>
+        /// <param name="type">目标类型</param>
+        /// <param name="factory">处理器工厂委托，接收目标类型和参数名称，返回对应的 <see cref="IParameterHandler"/> 实例</param>
+        /// <returns>当前的 ConsoleBuilder 实例（用于链式调用）</returns>
+        [return: NotNull]
+        public ConsoleBuilder Register(
+            [DisallowNull] Type type,
+            [DisallowNull] ParameterHandlerRegistry.HandlerFactory factory)
+        {
+            _registry.Register(type, factory);
+            return this;
+        }
+
+        /// <summary>
+        /// 为泛型类型 <typeparamref name="T"/> 注册一个固定的参数处理器实例（便捷方法）。
+        /// 内部将处理器包装为始终返回该实例的工厂。主要用于注册无状态的处理器实例。
+        /// 效果与使用 <see cref="ConsoleParameterHandlerAttribute"/> 特性相同。
+        /// 仅在 <see cref="Build"/> 或 <see cref="BuildConfig"/> 之前有效（<see cref="ParameterHandlerRegistry.Freeze"/> 之后不可再注册）。
+        /// </summary>
+        /// <typeparam name="T">目标类型</typeparam>
+        /// <param name="handler">处理器实例</param>
+        /// <returns>当前的 ConsoleBuilder 实例（用于链式调用）</returns>
+        [return: NotNull]
+        public ConsoleBuilder Register<T>([DisallowNull] IParameterHandler handler)
+        {
+            _registry.Register<T>(handler);
+            return this;
+        }
+
+        /// <summary>
         /// 注册一个动态处理器工厂，用于根据类型特征（如泛型构造、类型模式等）动态匹配参数处理逻辑。
         /// 动态处理器在 <see cref="ParameterHandlerRegistry.HandlerOf(Type, string)"/> 解析链中，
         /// 在枚举和数组动态构造之后、StringParameterHandler 降级之前被检查。
