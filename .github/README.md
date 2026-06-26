@@ -110,6 +110,7 @@ public class ConsoleCommands
 - 使用 [ConsoleParameterHandler] 定义参数解析器时:
     - 方法为静态公有
     - 方法名可以任意命名
+    - 参数一般使用大括号`{}`包括。如果参数具有列表语义，使用中括号`[]`；如果具有向量语义，使用圆括号`()`
 - 使用 [TargetConsoleKey] 时:
     - 优先标记类，特殊需求时才标记方法
     - ConsoleKey 使用帕斯卡命名法：ConsoleKeyName
