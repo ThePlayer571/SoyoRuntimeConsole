@@ -1,12 +1,17 @@
 {
   "name": "com.github.theplayer571.soyo-runtime-console",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "unity": "2022.3",
   "displayName": "Soyo Runtime Console",
-  "description": "Runtime Debug Console",
+  "description": "运行时可用的控制台，详细介绍见 https://github.com/ThePlayer571/SoyoRuntimeConsole",
   "author": {
     "name": "ThePlayer571",
     "email": "theplayer571@qq.com",
     "url": "https://space.bilibili.com/260468462"
+  },
+  "documentationUrl": "https://github.com/ThePlayer571/SoyoRuntimeConsole",
+  "licensesUrl": "https://github.com/ThePlayer571/SoyoRuntimeConsole/blob/master/LICENSE",
+  "dependencies": {
+    "com.unity.textmeshpro": "3.0.7"
   }
 }

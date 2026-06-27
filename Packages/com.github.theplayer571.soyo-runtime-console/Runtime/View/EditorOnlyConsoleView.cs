@@ -99,7 +99,7 @@ namespace Soyo.SoyoRuntimeConsole.View
         /// </remarks>
         /// <returns>控制台实例；如果未配置任何控制台源则返回 null。</returns>
         [return: MaybeNull]
-        protected virtual IConsole CreateConsole()
+        private IConsole CreateConsole()
         {
             if (consoleProvider != null)
             {

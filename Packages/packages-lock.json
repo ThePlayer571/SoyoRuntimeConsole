@@ -4,7 +4,9 @@
       "version": "file:com.github.theplayer571.soyo-runtime-console",
       "depth": 0,
       "source": "embedded",
-      "dependencies": {}
+      "dependencies": {
+        "com.unity.textmeshpro": "3.0.7"
+      }
     },
     "com.unity.2d.animation": {
       "version": "9.2.0",
