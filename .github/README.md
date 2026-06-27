@@ -43,7 +43,7 @@ public class ConsoleCommands
 }
 ```
 
-3. 运行游戏，在控制台UI中输入 `hello_world`，按回车执行命令。
+3. 运行游戏，在控制台UI中输入 `hello_world`，按回车执行命令。（运行时默认按F1打开控制台）
 4. 如果你想自定义参数解析器：
 
 ```csharp
