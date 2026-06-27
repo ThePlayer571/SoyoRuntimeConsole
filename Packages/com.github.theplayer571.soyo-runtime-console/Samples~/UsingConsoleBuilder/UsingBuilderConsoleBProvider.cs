@@ -1,9 +1,8 @@
-using Soyo.SoyoRuntimeConsole;
 using Soyo.SoyoRuntimeConsole.Helpers;
 using Soyo.SoyoRuntimeConsole.ValueObjects;
 using UnityEngine;
 
-namespace Samples.UsingConsoleBuilder
+namespace Soyo.SoyoRuntimeConsole.Samples.UsingConsoleBuilder
 {
     [CreateAssetMenu(menuName = "Soyo Runtime Console/UsingBuilderConsoleBProvider", fileName = "UsingBuilderConsoleBProvider")]
     public class UsingBuilderConsoleBProvider : ConsoleProvider

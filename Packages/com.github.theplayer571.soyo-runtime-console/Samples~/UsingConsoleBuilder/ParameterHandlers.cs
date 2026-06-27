@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Soyo.SoyoRuntimeConsole.ParameterHandlers;
 
-namespace Samples.UsingConsoleBuilder
+namespace Soyo.SoyoRuntimeConsole.Samples.UsingConsoleBuilder
 {
     // 定义待解析的类
     public class MyNumber

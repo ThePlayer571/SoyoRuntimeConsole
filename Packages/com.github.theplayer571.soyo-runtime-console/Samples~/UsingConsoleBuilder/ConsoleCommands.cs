@@ -1,7 +1,7 @@
 using Soyo.SoyoRuntimeConsole.Attributes;
 using UnityEngine;
 
-namespace Samples.UsingConsoleBuilder
+namespace Soyo.SoyoRuntimeConsole.Samples.UsingConsoleBuilder
 {
     // 使用 [TargetConsoleKey] 标记类
     [TargetConsoleKey("UsingBuilderConsoleA")]

@@ -13,5 +13,22 @@
   "licensesUrl": "https://github.com/ThePlayer571/SoyoRuntimeConsole/blob/master/LICENSE",
   "dependencies": {
     "com.unity.textmeshpro": "3.0.7"
-  }
+  },
+  "samples": [
+    {
+      "displayName": "Quick Start",
+      "description": "快速上手示例，帮助新手快速了解和使用本插件。请查看 'EditorOnlyConsole' 序列化面板，在 'Input' 框中输入命令。",
+      "path": "Samples~/QuickStart"
+    },
+    {
+      "displayName": "Using ConsoleBuilder",
+      "description": "使用 ConsoleBuilder 构建控制台的示例。运行时按F1打开控制台A，按F2打开控制台B。",
+      "path": "Samples~/UsingConsoleBuilder"
+    },
+    {
+      "displayName": "Using OriginalStyled Command",
+      "description": "不使用属性的原始样式命令示例。功能与 Quick Start 示例相同。请查看 'EditorOnlyConsole' 序列化面板，在 'Input' 框中输入命令。",
+      "path": "Samples~/UsingOriginalStyledCommand"
+    }
+  ]
 }
