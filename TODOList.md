@@ -6,4 +6,6 @@ CommandLineAnalyzer 缓存分析数据
 - 增强CommandLineAnalyzeResult，提供额外信息
 - 缓存已经解析完毕的参数（ConsoleCommandDesc的结构需要修改，以后再看）
 
+在ConsoleBuilder文档里面介绍重要的api
+
 ## 文档

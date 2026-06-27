@@ -18,8 +18,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
     /// </summary>
     /// <example>
     /// <code>
-    /// var console = new ConsoleBuilder()
-    ///     .SetConsoleKey("MyKey")
+    /// var console = new ConsoleBuilder("MyKey")
     ///     .RegisterFromClass&lt;MyCommands&gt;()
     ///     .RegisterHelpText(new CommandName("hello"), "Says hello")
     ///     .Build();
@@ -27,36 +26,30 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
     /// </example>
     public class ConsoleBuilder
     {
-        private ConsoleKey? _key;
+        private readonly ConsoleKey _key;
         private readonly List<ConsoleCommandDefinition> _commands = new();
         private readonly List<PendingCommandEntry> _pendingCommands = new();
         private readonly Dictionary<CommandName, string> _helpTexts = new();
         private readonly ParameterHandlerRegistry _registry = new();
         private bool _built;
 
-        #region 配置方法
-
         /// <summary>
-        /// 设置控制台 Key。多次调用以后者为准。
+        /// 使用指定的 <see cref="ConsoleKey"/> 创建构建器。
         /// </summary>
-        [return: NotNull]
-        public ConsoleBuilder SetConsoleKey(ConsoleKey key)
+        /// <param name="key">控制台 Key，用于过滤 <see cref="TargetConsoleKeyAttribute"/></param>
+        public ConsoleBuilder(ConsoleKey key)
         {
             _key = key;
-            return this;
         }
 
         /// <summary>
-        /// 使用字符串设置控制台 Key。
+        /// 使用字符串创建构建器。等效于 <c>new ConsoleBuilder(new ConsoleKey(key))</c>。
         /// </summary>
-        [return: NotNull]
-        public ConsoleBuilder SetConsoleKey([DisallowNull] string key)
+        /// <param name="key">控制台 Key 字符串</param>
+        public ConsoleBuilder([DisallowNull] string key)
         {
             _key = new ConsoleKey(key);
-            return this;
         }
-
-        #endregion
 
         #region 手动注册
 
@@ -88,7 +81,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
 
         /// <summary>
         /// 合并一个 <see cref="ConsoleConfig"/> 中的所有命令和帮助文本。
-        /// ConsoleKey 仅在当前 Builder 尚未设置时采用 config 的 Key，已设置则忽略。
+        /// ConsoleKey 已由构造函数设置，config 的 Key 被忽略。
         /// </summary>
         [return: NotNull]
         public ConsoleBuilder RegisterConsoleConfig(ConsoleConfig config)
@@ -114,12 +107,6 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                 {
                     RegisterHelpText(kv.Key, kv.Value);
                 }
-            }
-
-            // Key 仅首次设置
-            if (_key == null)
-            {
-                _key = config.Key;
             }
 
             return this;
@@ -202,7 +189,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// <returns>当前的 ConsoleBuilder 实例（用于链式调用）</returns>
         /// <example>
         /// <code>
-        /// var console = new ConsoleBuilder()
+        /// var console = new ConsoleBuilder("MyKey")
         ///     .Register&lt;MyType&gt;((type, name) => new MyTypeParameterHandler(name))
         ///     .RegisterFromClass&lt;MyCommands&gt;()
         ///     .Build();
@@ -281,7 +268,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         {
             EnsureBuilt();
             return new ConsoleConfig(
-                _key ?? new ConsoleKey(string.Empty),
+                _key,
                 _commands,
                 _helpTexts.Select(kv => (kv.Key, kv.Value)));
         }

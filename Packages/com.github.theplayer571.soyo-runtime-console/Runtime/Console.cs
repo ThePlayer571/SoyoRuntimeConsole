@@ -29,8 +29,7 @@ namespace Soyo.SoyoRuntimeConsole
         [return: NotNull]
         public static IConsole Create(ConsoleKey key)
         {
-            var builder = new ConsoleBuilder()
-                .SetConsoleKey(key)
+            var builder = new ConsoleBuilder(key)
                 .RegisterFromAllAssemblies();
             return builder.Build();
         }

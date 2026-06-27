@@ -96,8 +96,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Build_ManualCommand_ExecutesSuccessfully()
         {
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("Test")
+            var console = new ConsoleBuilder("Test")
                 .RegisterCommand(new TestCommand("manual_cmd"))
                 .Build();
 
@@ -113,8 +112,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Build_ChainedCall_AllMethodsWork()
         {
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("chain_test")
+            var console = new ConsoleBuilder("chain_test")
                 .RegisterCommand(new TestCommand("cmd1"))
                 .RegisterCommand(new TestCommand("cmd2"))
                 .RegisterHelpText(new CommandName("cmd1"), "First command")
@@ -125,27 +123,6 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             Assert.That(console.CommandHelpText[new CommandName("cmd1")], Is.EqualTo("First command"));
         }
 
-        [Test]
-        public void Build_NoConsoleKey_UsesEmptyKey()
-        {
-            var console = new ConsoleBuilder()
-                .RegisterCommand(new TestCommand("no_key_cmd"))
-                .Build();
-
-            Assert.That(console.Key, Is.EqualTo(new ConsoleKey(string.Empty)));
-        }
-
-        [Test]
-        public void Build_MultipleSetConsoleKey_LastWins()
-        {
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("first")
-                .SetConsoleKey("second")
-                .SetConsoleKey(new ConsoleKey("third"))
-                .Build();
-
-            Assert.That(console.Key, Is.EqualTo(new ConsoleKey("third")));
-        }
 
         #endregion
 
@@ -154,7 +131,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void RegisterHelpText_Duplicate_WarnsAndKeepsFirst()
         {
-            var builder = new ConsoleBuilder();
+            var builder = new ConsoleBuilder("test");
             builder.RegisterHelpText(new CommandName("dup_cmd"), "First help text");
 
             LogAssert.Expect(LogType.Warning,
@@ -178,14 +155,14 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
                 new ConsoleCommandDefinition[] { new TestCommand("from_config") },
                 new[] { (new CommandName("from_config"), "From config") });
 
-            var console = new ConsoleBuilder()
+            var console = new ConsoleBuilder("BuilderKey")
                 .RegisterCommand(new TestCommand("manual"))
                 .RegisterConsoleConfig(config1)
                 .Build();
 
             Assert.That(console.Commands.Count, Is.EqualTo(2));
             Assert.That(console.CommandHelpText.Count, Is.EqualTo(1));
-            Assert.That(console.Key, Is.EqualTo(new ConsoleKey("ConfigKey")));
+            Assert.That(console.Key, Is.EqualTo(new ConsoleKey("BuilderKey")));
         }
 
         [Test]
@@ -195,8 +172,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
                 new ConsoleKey("ConfigKey"),
                 null, null);
 
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("MyKey")
+            var console = new ConsoleBuilder("MyKey")
                 .RegisterConsoleConfig(config)
                 .Build();
 
@@ -208,7 +184,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         {
             var invalidConfig = default(ConsoleConfig); // IsValid = false
 
-            Assert.DoesNotThrow(() => { new ConsoleBuilder().RegisterConsoleConfig(invalidConfig); });
+            Assert.DoesNotThrow(() => { new ConsoleBuilder("test").RegisterConsoleConfig(invalidConfig); });
         }
 
         #endregion
@@ -220,8 +196,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         {
             s_wasCalled = false;
 
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("Tests")
+            var console = new ConsoleBuilder("Tests")
                 .RegisterFromClass<ConsoleBuilderTests>()
                 .Build();
 
@@ -242,7 +217,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void RegisterFromClass_GenericOverload_WorksSame()
         {
-            var console = new ConsoleBuilder()
+            var console = new ConsoleBuilder("Tests")
                 .RegisterFromClass(typeof(ConsoleBuilderTests))
                 .Build();
 
@@ -256,8 +231,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void RegisterFromClass_WithParameterHandlers_RegistersBoth()
         {
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("Tests")
+            var console = new ConsoleBuilder("Tests")
                 .RegisterFromClass<DualAttributeFixture>()
                 .Build();
 
@@ -281,14 +255,12 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         public void RegisterFromClass_BuilderIsolation_TwoBuildersDoNotShareState()
         {
             // Builder 1: 注册自定义类型处理器
-            var builder1 = new ConsoleBuilder()
-                .SetConsoleKey("Tests")
+            var builder1 = new ConsoleBuilder("Tests")
                 .RegisterFromClass<DualAttributeFixture>();
             var console1 = builder1.Build();
 
             // Builder 2: 不注册任何自定义处理器
-            var builder2 = new ConsoleBuilder()
-                .SetConsoleKey("Tests");
+            var builder2 = new ConsoleBuilder("Tests");
             var console2 = builder2.Build();
 
             // console1 应有 dual_test 命令
@@ -305,8 +277,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void BuildConfig_ReturnsValidConfig()
         {
-            var config = new ConsoleBuilder()
-                .SetConsoleKey("cfg_test")
+            var config = new ConsoleBuilder("cfg_test")
                 .RegisterCommand(new TestCommand("cfg_cmd"))
                 .BuildConfig();
 
@@ -322,8 +293,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void BuildConfig_CalledMultipleTimes_ReturnsSameResult()
         {
-            var builder = new ConsoleBuilder()
-                .SetConsoleKey("idem_test")
+            var builder = new ConsoleBuilder("idem_test")
                 .RegisterCommand(new TestCommand("idem_cmd"));
 
             var config1 = builder.BuildConfig();
@@ -340,8 +310,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void RegisterDynamicHandler_FluentApi_ReturnsBuilder()
         {
-            var builder = new ConsoleBuilder()
-                .SetConsoleKey("chain_test")
+            var builder = new ConsoleBuilder("chain_test")
                 .RegisterDynamicHandler((type, name) => null);
 
             // 验证流畅链式调用不崩溃
@@ -351,8 +320,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void RegisterDynamicHandler_BuildSucceeds()
         {
-            var builder = new ConsoleBuilder()
-                .SetConsoleKey("Tests")
+            var builder = new ConsoleBuilder("Tests")
                 .RegisterDynamicHandler((type, name) =>
                     type == typeof(System.Version)
                         ? new StringParameterHandler(name ?? "Version")
@@ -423,7 +391,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void RegisterT_HandlerFactory_FluentApi_ReturnsBuilder()
         {
-            var builder = new ConsoleBuilder()
+            var builder = new ConsoleBuilder("test")
                 .Register<RegisterTestValue>((type, name) => new RegisterTestValueHandler(name));
 
             Assert.DoesNotThrow(() => builder.Build());
@@ -432,8 +400,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void RegisterT_HandlerFactory_CommandResolvesHandlerCorrectly()
         {
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("Tests")
+            var console = new ConsoleBuilder("Tests")
                 .Register<RegisterTestValue>((type, name) => new RegisterTestValueHandler(name))
                 .RegisterFromClass<RegisterTestCommands>()
                 .Build();
@@ -452,8 +419,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         {
             RegisterTestCommands.LastValue = default;
 
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("Tests")
+            var console = new ConsoleBuilder("Tests")
                 .Register<RegisterTestValue>((type, name) => new RegisterTestValueHandler(name))
                 .RegisterFromClass<RegisterTestCommands>()
                 .Build();
@@ -468,8 +434,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         public void RegisterT_HandlerFactory_MultipleRegistrations_ComposedAsComposite()
         {
             // 同一类型注册多个工厂 — 自动组合为 CompositeParameterHandler
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("Tests")
+            var console = new ConsoleBuilder("Tests")
                 .Register<RegisterTestValue>((type, name) => new RegisterTestValueHandler(name))
                 .Register<RegisterTestValue>((type, name) => new RegisterTestValueHandler(name + "_alt"))
                 .RegisterFromClass<RegisterTestCommands>()
@@ -482,8 +447,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Register_NonGeneric_TypeParameter_WorksSameAsGeneric()
         {
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("Tests")
+            var console = new ConsoleBuilder("Tests")
                 .Register(typeof(RegisterTestValue), (type, name) => new RegisterTestValueHandler(name))
                 .RegisterFromClass<RegisterTestCommands>()
                 .Build();
@@ -497,8 +461,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         {
             var handlerInstance = new RegisterTestValueHandler("my_value");
 
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("Tests")
+            var console = new ConsoleBuilder("Tests")
                 .Register<RegisterTestValue>(handlerInstance)
                 .RegisterFromClass<RegisterTestCommands>()
                 .Build();
@@ -511,15 +474,13 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         public void RegisterT_BuilderIsolation_DoesNotLeakToOtherBuilder()
         {
             // Builder 1: 注册自定义类型处理器
-            var builder1 = new ConsoleBuilder()
-                .SetConsoleKey("Tests")
+            var builder1 = new ConsoleBuilder("Tests")
                 .Register<RegisterTestValue>((type, name) => new RegisterTestValueHandler(name))
                 .RegisterFromClass<RegisterTestCommands>();
             var console1 = builder1.Build();
 
             // Builder 2: 不注册自定义处理器
-            var builder2 = new ConsoleBuilder()
-                .SetConsoleKey("Tests")
+            var builder2 = new ConsoleBuilder("Tests")
                 .RegisterFromClass<RegisterTestCommands>();
             var console2 = builder2.Build();
 
@@ -543,7 +504,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void Build_EmptyBuilder_CreatesValidConsole()
         {
-            var console = new ConsoleBuilder().Build();
+            var console = new ConsoleBuilder("test").Build();
 
             Assert.That(console.Commands.Count, Is.EqualTo(0));
             Assert.That(console.CommandHelpText.Count, Is.EqualTo(0));

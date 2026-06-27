@@ -98,8 +98,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void EndToEnd_Vector3EnumArray_ParsedAndExecutedCorrectly()
         {
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("Tests")
+            var console = new ConsoleBuilder("Tests")
                 .RegisterFromClass(typeof(ComplexParamFixture))
                 .Build();
 
@@ -134,8 +133,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void DuplicateCommandName_BothRegistered_ExecutedByIndex()
         {
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("Tests")
+            var console = new ConsoleBuilder("Tests")
                 .RegisterFromClass(typeof(DuplicateNameFixture))
                 .Build();
 
@@ -186,8 +184,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         {
             var manualCmd = new TestManualCommand("manual_mixed");
 
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("Tests")
+            var console = new ConsoleBuilder("Tests")
                 .RegisterCommand(manualCmd)
                 .RegisterFromClass(typeof(ManyTypesFixture))
                 .Build();
@@ -215,8 +212,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         [Test]
         public void EndToEnd_MultipleBasicTypes_AllParsedCorrectly()
         {
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("Tests")
+            var console = new ConsoleBuilder("Tests")
                 .RegisterFromClass(typeof(ManyTypesFixture))
                 .Build();
 
@@ -246,8 +242,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
                 new ConsoleCommandDefinition[] { new TestManualCommand("cmd_b") },
                 new[] { (new CommandName("cmd_b"), "Help B") });
 
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("my_key")
+            var console = new ConsoleBuilder("my_key")
                 .RegisterConsoleConfig(config1)
                 .RegisterConsoleConfig(config2)
                 .Build();

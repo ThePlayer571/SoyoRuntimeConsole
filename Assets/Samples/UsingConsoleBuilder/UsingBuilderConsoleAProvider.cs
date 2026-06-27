@@ -11,8 +11,7 @@ namespace Samples.UsingConsoleBuilder
     {
         public override IConsole CreateConsole()
         {
-            var console = new ConsoleBuilder()
-                .SetConsoleKey("UsingBuilderConsoleA") // 设置控制台Key
+            var console = new ConsoleBuilder("UsingBuilderConsoleA") // 设置控制台Key
                 .RegisterFromClass<ConsoleCommands_1>() // 扫描类
                 .Build();
 
