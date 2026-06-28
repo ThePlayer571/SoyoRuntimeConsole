@@ -90,6 +90,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
 
             var leftInput = parametersInput;
             var parameters = new List<string>();
+            var lastParameterCutByAdvance = false;
 
             // 尝试根据每个parameterHandler分析参数
             for (var index = 0; index < commandDefinition.ParameterHandlers.Count; index++)
@@ -104,6 +105,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
 
                 leftInput = CutLeftStringWhenShouldAdvanceOrHasNoInput(leftInput, parameterHandler,
                     out var slice, out var cutByAdvance);
+                lastParameterCutByAdvance = cutByAdvance;
 
                 var parameterNotValid = !parameterHandler.IsValid(slice);
                 var hasLeftInput = !string.IsNullOrEmpty(leftInput);
@@ -150,6 +152,13 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
 
                 // advance，分析下一个参数
                 parameters.Add(slice);
+            }
+            
+            // handler遍历完了，最后一个参数触发了advance：分析不通过
+            // 因为advance的意图是输入下一个参数，但是没有下一个参数了
+            if (lastParameterCutByAdvance)
+            {
+                return null;
             }
 
             // handler遍历完了，但是还有输入：分析不通过
