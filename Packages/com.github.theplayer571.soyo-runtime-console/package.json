@@ -1,6 +1,6 @@
 {
   "name": "com.github.theplayer571.soyo-runtime-console",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "unity": "2022.3",
   "displayName": "Soyo Runtime Console",
   "description": "运行时可用的控制台，详细介绍见 https://github.com/ThePlayer571/SoyoRuntimeConsole",
