@@ -109,6 +109,7 @@ namespace Soyo.SoyoRuntimeConsole
         {
             var suggestion = GetSuggestion();
             var candidateIndex = CandidateIndex;
+            CandidateIndex = 0;
 
             // 提前退出
             var candidates = suggestion.Candidates;

@@ -274,6 +274,26 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         }
 
         [Test]
+        public void ViewModel_AutoComplete_ResetsCandidateIndexToZero()
+        {
+            _viewModel.SetInputText("hel");
+            _viewModel.CandidateIndex = 1;
+            _viewModel.AutoComplete();
+
+            Assert.That(_viewModel.CandidateIndex, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void ViewModel_AutoComplete_Failure_StillResetsCandidateIndex()
+        {
+            _viewModel.SetInputText("hel");
+            _viewModel.CandidateIndex = -1;
+            _viewModel.AutoComplete();
+
+            Assert.That(_viewModel.CandidateIndex, Is.EqualTo(0));
+        }
+
+        [Test]
         public void ViewModel_AutoComplete_NoMatchingCommand_ReturnsFalse()
         {
             // "zzz" 不匹配任何已注册的命令
