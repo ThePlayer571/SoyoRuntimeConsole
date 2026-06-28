@@ -118,7 +118,10 @@ MonoBehaviour:
   showOnStart: 0
   dontDestroyOnLoad: 1
   toggleVisibilityKey: 282
-  consoleProvider: {fileID: 0}
+  recordLogEntriesCount: 10
+  showStackTraceOnStart: 0
+  allowTabForStackTrace: 1
+  consoleProvider: {fileID: 11400000, guid: fdfb2766338116d47b804dab52f8fdf0, type: 2}
   view: {fileID: 7997191844282937076}
   inputField: {fileID: 2855714788972423562}
   outputField: {fileID: 794571477196175519}
@@ -587,6 +590,7 @@ GameObject:
   - component: {fileID: 2689763446290468640}
   - component: {fileID: 794571477196175519}
   - component: {fileID: 6809310069059474336}
+  - component: {fileID: 1590908702275443346}
   m_Layer: 5
   m_Name: OutputFiend
   m_TagString: Untagged
@@ -764,6 +768,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 0
   m_VerticalFit: 2
+--- !u!114 &1590908702275443346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4330771357763097812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_IgnoreLayout: 0
+  m_MinWidth: -1
+  m_MinHeight: 944.9913
+  m_PreferredWidth: -1
+  m_PreferredHeight: -1
+  m_FlexibleWidth: -1
+  m_FlexibleHeight: -1
+  m_LayoutPriority: 1
 --- !u!1 &4523473652771105478
 GameObject:
   m_ObjectHideFlags: 0

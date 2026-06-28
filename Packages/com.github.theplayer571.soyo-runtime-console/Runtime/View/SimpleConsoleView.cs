@@ -51,9 +51,6 @@ namespace Soyo.SoyoRuntimeConsole.View
             {
                 var sb = new StringBuilder();
 
-                // 前缀（为了将ScrollRect顶到最下面）
-                sb.Append(new string('\n', 22));
-
                 // 构造sb
                 switch (_showState)
                 {
