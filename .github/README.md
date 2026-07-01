@@ -3,6 +3,8 @@
 [![Unity 2022.3+](https://img.shields.io/badge/unity-2022.3%2B-blue.svg)](https://unity3d.com/get-unity/download)
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://github.com/ThePlayer571/SoyoRuntimeConsole/blob/master/LICENSE)
 
+![Image](Image.png)
+
 这是一个运行时控制台插件，用于进行运行时调试、给玩家作为控制台使用。
 
 特点：
