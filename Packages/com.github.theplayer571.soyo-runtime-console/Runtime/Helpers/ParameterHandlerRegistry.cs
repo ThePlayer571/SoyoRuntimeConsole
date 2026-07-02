@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
+using Soyo.SoyoRuntimeConsole.Attributes;
 using Soyo.SoyoRuntimeConsole.ParameterHandlers;
 using UnityEngine;
 
@@ -368,6 +370,44 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                 $"[ParameterHandlerRegistry] No handler registered for type '{type.FullName}'. " +
                 "Falling back to StringParameterHandler.");
             return new StringParameterHandler(effectiveName);
+        }
+
+        /// <summary>
+        /// 从反射参数信息创建对应的参数处理器。
+        /// 自动检测参数上的 Attribute（如 <see cref="FixedFieldAttribute"/>、<see cref="CommandParameterAttribute"/>）
+        /// 并创建合适的处理器。这是为 Attribute 驱动的命令系统设计的统一入口点。
+        /// </summary>
+        /// <remarks>
+        /// <b>注意：此方法当前使用 if-else 式的 Attribute 检测，这是一个临时机制。</b>
+        /// 未来会提出新的扩展机制（如可注册的 Attribute 处理器策略）来替代这种硬编码的写法，
+        /// 使系统对新的参数 Attribute 类型具备更好的开放封闭性。
+        /// </remarks>
+        /// <param name="paramInfo">方法的参数反射信息</param>
+        /// <returns>对应的参数处理器</returns>
+        [return: NotNull]
+        public IParameterHandler HandlerOf([DisallowNull] ParameterInfo paramInfo)
+        {
+            // 1. 检测 [FixedField] — 属性驱动的固定字段处理器
+            var fixedFieldAttr = paramInfo.GetCustomAttribute<FixedFieldAttribute>();
+            if (fixedFieldAttr != null)
+            {
+                if (paramInfo.ParameterType != typeof(object))
+                {
+                    Debug.LogWarning(
+                        $"[ParameterHandlerRegistry] Parameter '{paramInfo.Name}' has [FixedField] " +
+                        $"but its type is '{paramInfo.ParameterType.Name}'. " +
+                        "FixedField parameters should be of type 'object'. Proceeding anyway.");
+                }
+
+                var fixedFieldName = fixedFieldAttr.FixedField ?? paramInfo.Name;
+                return new FixedFieldParameterHandler(fixedFieldName);
+            }
+
+            // 2. 解析参数名（[CommandParameter] 或原始参数名）
+            var paramName = paramInfo.GetCustomAttribute<CommandParameterAttribute>()?.Name ?? paramInfo.Name;
+
+            // 3. 委托给类型驱动的解析
+            return HandlerOf(paramInfo.ParameterType, paramName);
         }
 
         #endregion

@@ -19,11 +19,6 @@ parameter handler system.
   defined in `Tests/Editor/`).
 - **After making changes**: Claude should remind the user to run the tests manually to verify.
 
-## Task File
-
-When the user mentions **task.md** **交互文件**、**TASKS**、**任务文件**、**需求文件**、**todo**、**任务** or references
-a task/requirement they've "written down", read `TASKS.md` at the repo root and work through the entries there.
-
 ## Samples
 
 Samples are authored under `Assets/Samples/` during development. The canonical package location is

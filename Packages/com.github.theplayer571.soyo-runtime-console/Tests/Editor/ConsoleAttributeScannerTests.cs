@@ -148,6 +148,24 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             }
         }
 
+        /// <summary>
+        /// 带 [FixedField] 参数的命令。
+        /// </summary>
+        [TargetConsoleKey("Tests")]
+        private static class FixedFieldFixture
+        {
+            public static string LastAction { get; set; }
+
+            [ConsoleCommand("fixed_field_test")]
+            private static void DoAction(
+                [FixedField] object action,
+                [FixedField("delete")] object deleteAction)
+            {
+                // FixedField 参数始终为 null，此处仅验证方法被调用
+                LastAction = "called";
+            }
+        }
+
         #endregion
 
         #region 测试辅助 — 两阶段流水线
@@ -172,9 +190,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
                 var handlers = new IParameterHandler[paramInfos.Length];
                 for (int i = 0; i < paramInfos.Length; i++)
                 {
-                    var param = paramInfos[i];
-                    var paramName = param.GetCustomAttribute<CommandParameterAttribute>()?.Name ?? param.Name;
-                    handlers[i] = registry.HandlerOf(param.ParameterType, paramName);
+                    handlers[i] = registry.HandlerOf(paramInfos[i]);
                 }
                 commands.Add(new AttributeCommandDefinition(entry.Method, entry.CommandName, handlers));
             }
@@ -429,6 +445,77 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             public TestConsole(ConsoleConfig config) : base(config)
             {
             }
+        }
+
+        #endregion
+
+        #region FixedField
+
+        [Test]
+        public void ScanClass_FixedField_CreatesFixedFieldHandler()
+        {
+            var (commands, _) = BuildScannedClass(typeof(FixedFieldFixture));
+
+            Assert.That(commands.Count, Is.EqualTo(1));
+            Assert.That(commands[0].ParameterHandlers.Count, Is.EqualTo(2));
+
+            // 无参 FixedField — 使用参数名 "action"
+            Assert.That(commands[0].ParameterHandlers[0], Is.InstanceOf<FixedFieldParameterHandler>());
+            Assert.That(commands[0].ParameterHandlers[0].GetDescription().Name, Is.EqualTo("action"));
+
+            // 带参 FixedField("delete") — 使用 "delete"
+            Assert.That(commands[0].ParameterHandlers[1], Is.InstanceOf<FixedFieldParameterHandler>());
+            Assert.That(commands[0].ParameterHandlers[1].GetDescription().Name, Is.EqualTo("delete"));
+        }
+
+        [Test]
+        public void ScanClass_FixedField_ParseReturnsNull()
+        {
+            var (commands, _) = BuildScannedClass(typeof(FixedFieldFixture));
+
+            var handler = commands[0].ParameterHandlers[0];
+            Assert.That(handler.Parse("anything"), Is.Null);
+            Assert.That(handler.Parse(""), Is.Null);
+            Assert.That(handler.Parse(" "), Is.Null);
+        }
+
+        [Test]
+        public void EndToEnd_FixedFieldCommand_ExecutesViaConsoleBase()
+        {
+            var (commands, helpTexts) = BuildScannedClass(typeof(FixedFieldFixture));
+            var config = new ConsoleConfig(
+                new ConsoleKey("Tests"),
+                commands,
+                helpTexts.Select(kv => (kv.Key, kv.Value)));
+
+            var console = new TestConsole(config);
+
+            // 验证命令存在
+            Assert.That(console.Commands.Any(c => c.CommandName.Name == "fixed_field_test"), Is.True);
+
+            // 输入正确的固定字段值 — 命令应执行
+            console.SetInputText("fixed_field_test action delete");
+            Assert.IsTrue(console.SendInput());
+            Assert.That(FixedFieldFixture.LastAction, Is.EqualTo("called"));
+        }
+
+        [Test]
+        public void EndToEnd_FixedFieldCommand_WrongValue_DoesNotExecute()
+        {
+            FixedFieldFixture.LastAction = null;
+
+            var (commands, helpTexts) = BuildScannedClass(typeof(FixedFieldFixture));
+            var config = new ConsoleConfig(
+                new ConsoleKey("Tests"),
+                commands,
+                helpTexts.Select(kv => (kv.Key, kv.Value)));
+
+            var console = new TestConsole(config);
+
+            // 输入不匹配的固定字段值 — 命令不应执行
+            console.SetInputText("fixed_field_test wrong_value delete");
+            Assert.IsFalse(console.SendInput());
+            Assert.That(FixedFieldFixture.LastAction, Is.Null);
         }
 
         #endregion

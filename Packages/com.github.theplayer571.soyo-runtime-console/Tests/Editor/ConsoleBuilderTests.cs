@@ -514,5 +514,70 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         }
 
         #endregion
+
+        #region FixedField
+
+        /// <summary>
+        /// 带 [FixedField] 参数的命令 Fixture。
+        /// </summary>
+        [TargetConsoleKey("Tests")]
+        private class BuilderFixedFieldFixture
+        {
+            public static bool WasCalled { get; set; }
+
+            [ConsoleCommand("builder_fixed")]
+            private static void BuilderFixed(
+                [FixedField("list")] object action)
+            {
+                WasCalled = true;
+                Debug.Log("BuilderFixedField executed");
+            }
+        }
+
+        [Test]
+        public void RegisterFromClass_FixedField_CreatesFixedFieldHandler()
+        {
+            var console = new ConsoleBuilder("Tests")
+                .RegisterFromClass<BuilderFixedFieldFixture>()
+                .Build();
+
+            var cmd = console.Commands.FirstOrDefault(c => c.CommandName.Name == "builder_fixed");
+            Assert.IsNotNull(cmd);
+            Assert.That(cmd.ParameterHandlers.Count, Is.EqualTo(1));
+            Assert.That(cmd.ParameterHandlers[0], Is.InstanceOf<FixedFieldParameterHandler>());
+            Assert.That(cmd.ParameterHandlers[0].GetDescription().Name, Is.EqualTo("list"));
+        }
+
+        [Test]
+        public void RegisterFromClass_FixedField_ExecutesSuccessfully()
+        {
+            BuilderFixedFieldFixture.WasCalled = false;
+
+            var console = new ConsoleBuilder("Tests")
+                .RegisterFromClass<BuilderFixedFieldFixture>()
+                .Build();
+
+            LogAssert.Expect(LogType.Log, "BuilderFixedField executed");
+            console.SetInputText("builder_fixed list");
+            Assert.IsTrue(console.SendInput());
+            Assert.IsTrue(BuilderFixedFieldFixture.WasCalled);
+        }
+
+        [Test]
+        public void RegisterFromClass_FixedField_WrongValue_DoesNotExecute()
+        {
+            BuilderFixedFieldFixture.WasCalled = false;
+
+            var console = new ConsoleBuilder("Tests")
+                .RegisterFromClass<BuilderFixedFieldFixture>()
+                .Build();
+
+            // 输入不匹配固定字段 "list"
+            console.SetInputText("builder_fixed wrong");
+            Assert.IsFalse(console.SendInput());
+            Assert.IsFalse(BuilderFixedFieldFixture.WasCalled);
+        }
+
+        #endregion
     }
 }

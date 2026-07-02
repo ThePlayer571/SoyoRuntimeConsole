@@ -309,9 +309,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
 
                 for (int i = 0; i < paramInfos.Length; i++)
                 {
-                    var param = paramInfos[i];
-                    var paramName = param.GetCustomAttribute<CommandParameterAttribute>()?.Name ?? param.Name;
-                    handlers[i] = _registry.HandlerOf(param.ParameterType, paramName);
+                    handlers[i] = _registry.HandlerOf(paramInfos[i]);
                 }
 
                 // 检查是否有未能初始化的处理器，若存在则跳过整个命令

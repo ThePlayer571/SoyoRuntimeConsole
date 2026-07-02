@@ -69,7 +69,7 @@ namespace Soyo.SoyoRuntimeConsole.DevSandbox
         {
             Debug.Log($"Vector3: {value}");
         }
-        
+
         [ConsoleCommand]
         public static void test(Vector4 value)
         {
@@ -119,6 +119,12 @@ namespace Soyo.SoyoRuntimeConsole.DevSandbox
         }
 
         [ConsoleCommand]
+        public static void test([FixedField] object fixed_test)
+        {
+            Debug.Log($"fixed_test: {fixed_test}");
+        }
+
+        [ConsoleCommand]
         public static void test(string[] value)
         {
             Debug.Log($"string[]: [{string.Join(", ", value)}]");
@@ -129,13 +135,14 @@ namespace Soyo.SoyoRuntimeConsole.DevSandbox
         {
             Debug.Log($"string: \"{value}\"");
         }
-        
+
         [ConsoleCommand]
         public static void test(int a, int b)
         {
             Debug.Log($"int a: {a}, int b: {b}");
         }
-        
+
+
         [ConsoleCommand]
         public static void other_test(int value)
         {
