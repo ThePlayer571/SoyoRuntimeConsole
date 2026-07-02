@@ -192,7 +192,15 @@ namespace Soyo.SoyoRuntimeConsole.View
                                         }
 
                                         var parameterDescription = commandInfo.ParameterDescriptions[parameterIndex];
-                                        sb.Append($"<{parameterDescription.Type}: {parameterDescription.Name}> ");
+
+                                        if (parameterDescription.Type == null)
+                                        {
+                                            sb.Append($"{parameterDescription.Name} ");
+                                        }
+                                        else
+                                        {
+                                            sb.Append($"<{parameterDescription.Type}: {parameterDescription.Name}> ");
+                                        }
                                     }
                                 }
 
