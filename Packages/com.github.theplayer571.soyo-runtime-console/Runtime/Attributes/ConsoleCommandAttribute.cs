@@ -14,7 +14,7 @@ namespace Soyo.SoyoRuntimeConsole.Attributes
     /// <remarks>
     /// 无参构造时，命令名将使用方法名（由扫描器填充）。
     /// 方法的每个参数会通过 <see cref="ParameterHandlerRegistry"/> 解析。
-    /// 不支持泛型方法和带默认值的参数。
+    /// 不支持泛型方法。带默认值的参数会被自动展开为多个命令变体。
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public sealed class ConsoleCommandAttribute : Attribute

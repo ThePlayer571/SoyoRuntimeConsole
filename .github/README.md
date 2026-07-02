@@ -120,6 +120,26 @@ public class ConsoleCommands
     - 优先标记类，特殊需求时才标记方法
     - ConsoleKey 使用帕斯卡命名法：ConsoleKeyName
 
+### 默认参数
+
+[ConsoleCommand] 支持带默认值的参数。对于带有默认参数的方法，系统会在构建阶段自动展开为多个命令变体。
+
+```csharp
+[ConsoleCommand]
+public static void spawn_enemy(int count, string type = "grunt", float speed = 1.0f)
+{
+    // ...
+}
+```
+
+上面的代码会自动生成三个命令变体：
+
+- `spawn_enemy <Integer: count>`
+- `spawn_enemy <Integer: count> <String: type>`
+- `spawn_enemy <Integer: count> <String: type> <Float: speed>`
+
+> 默认参数必须位于参数列表末尾（C# 语法规则）。
+
 ### 自定义UI
 
 控制台基于 IConsole 运行，IConsle 只涉及行为逻辑，不提供视图相关辅助方法。因此我设计了 ConsoleViewModel。

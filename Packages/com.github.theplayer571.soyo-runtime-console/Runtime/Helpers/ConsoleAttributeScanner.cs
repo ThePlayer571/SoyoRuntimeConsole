@@ -21,7 +21,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
     /// <list type="number">
     /// <item>仅扫描 <c>BindingFlags.Public | NonPublic | Static | DeclaredOnly</c> 的方法</item>
     /// <item>泛型方法 → 警告并跳过</item>
-    /// <item>默认参数 → 警告但不跳过</item>
+    /// <item>默认参数 → 打印信息但不跳过（构建阶段自动展开为多个命令变体）</item>
     /// <item>ref/out 参数 → 警告但不跳过</item>
     /// <item>命令名优先使用 <see cref="ConsoleCommandAttribute.Name"/>，否则使用方法名</item>
     /// <item><see cref="TargetConsoleKeyAttribute"/> 方法级优先于类级，无标记为全局命令</item>
@@ -180,13 +180,13 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                 return null;
             }
 
-            // 3. 默认参数检查 — 警告但不跳过
+            // 3. 默认参数检查 — 打印信息但不跳过（构建阶段自动展开为多个命令变体）
             var parameters = method.GetParameters();
             if (parameters.Any(p => p.HasDefaultValue))
             {
-                Debug.LogWarning(
+                Debug.Log(
                     $"[ConsoleCommand] '{method.DeclaringType!.FullName}.{method.Name}' has default parameter(s). " +
-                    "Default parameters are not supported — use overloads instead.");
+                    "Multiple command variants will be generated automatically in the build phase.");
             }
 
             // 4. ref / out 参数检查 — 警告

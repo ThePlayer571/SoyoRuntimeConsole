@@ -346,8 +346,16 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                     continue;
                 }
 
-                var command = new AttributeCommandDefinition(pending.Method, pending.CommandName, handlers);
-                _commands.Add(command);
+                // 3. 默认参数展开：为带默认值的参数自动生成多个命令变体
+                if (HasAnyDefaultParameter(paramInfos))
+                {
+                    ExpandDefaultParamVariants(pending, paramInfos, handlers);
+                }
+                else
+                {
+                    var command = new AttributeCommandDefinition(pending.Method, pending.CommandName, handlers);
+                    _commands.Add(command);
+                }
             }
 
             _pendingCommands.Clear();
@@ -398,6 +406,108 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
 
             // 4. 委托给注册表的类型 + 属性驱动解析
             return _registry.HandlerOf(paramInfo.ParameterType, paramName, attrs);
+        }
+
+        /// <summary>
+        /// 检查方法的参数列表中是否存在带默认值的参数。
+        /// </summary>
+        private static bool HasAnyDefaultParameter([DisallowNull] ParameterInfo[] paramInfos)
+        {
+            foreach (var p in paramInfos)
+            {
+                if (p.HasDefaultValue)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 将带默认参数的方法展开为多个命令变体。
+        /// 例如 <c>cmd(int a, int b = 1, int c = 2)</c> 会生成：
+        /// <list type="bullet">
+        /// <item>1 个 handler（a）→ DefaultParamAttributeCommandDefinition</item>
+        /// <item>2 个 handler（a, b）→ DefaultParamAttributeCommandDefinition</item>
+        /// <item>3 个 handler（a, b, c）→ AttributeCommandDefinition</item>
+        /// </list>
+        /// </summary>
+        private void ExpandDefaultParamVariants(
+            PendingCommandEntry pending,
+            [DisallowNull] ParameterInfo[] paramInfos,
+            [DisallowNull] IParameterHandler[] allHandlers)
+        {
+            var totalParams = paramInfos.Length;
+
+            // 找到第一个有默认值的参数索引
+            var firstDefaultIndex = -1;
+            for (int i = 0; i < totalParams; i++)
+            {
+                if (paramInfos[i].HasDefaultValue)
+                {
+                    firstDefaultIndex = i;
+                    break;
+                }
+            }
+
+            // 防御性检查：验证默认参数是否连续位于末尾（C# 编译器保证这一点）
+            if (!AreDefaultsContiguousAtEnd(paramInfos, firstDefaultIndex))
+            {
+                Debug.LogWarning(
+                    $"[ConsoleBuilder] Command '{pending.CommandName.Name}': default parameters are not " +
+                    "contiguous at the end of the parameter list. Falling back to a single full-parameter " +
+                    "command definition (no default parameter expansion).");
+                _commands.Add(new AttributeCommandDefinition(pending.Method, pending.CommandName, allHandlers));
+                return;
+            }
+
+            // 为每个参数数量变体生成命令定义
+            // userCount 从 firstDefaultIndex（仅必选参数）到 totalParams - 1（不含完整参数版）
+            for (int userCount = firstDefaultIndex; userCount < totalParams; userCount++)
+            {
+                // 创建 handler 子集（用户需要提供的前 userCount 个 handler）
+                var subsetHandlers = new IParameterHandler[userCount];
+                Array.Copy(allHandlers, subsetHandlers, userCount);
+
+                // 收集剩余参数的默认值
+                var defaultCount = totalParams - userCount;
+                var defaultValues = new object[defaultCount];
+                for (int i = 0; i < defaultCount; i++)
+                {
+                    var originalIndex = userCount + i;
+                    defaultValues[i] = paramInfos[originalIndex].DefaultValue;
+                }
+
+                _commands.Add(new DefaultParamAttributeCommandDefinition(
+                    pending.Method, pending.CommandName, subsetHandlers, defaultValues));
+            }
+
+            // 完整参数版本（不含默认值的变体，使用普通 AttributeCommandDefinition）
+            _commands.Add(new AttributeCommandDefinition(pending.Method, pending.CommandName, allHandlers));
+        }
+
+        /// <summary>
+        /// 验证默认参数是否连续位于参数列表末尾。
+        /// C# 编译器保证可选参数必须位于必选参数之后，此方法用于防御性检查。
+        /// </summary>
+        private static bool AreDefaultsContiguousAtEnd(
+            [DisallowNull] ParameterInfo[] paramInfos, int firstDefaultIndex)
+        {
+            if (firstDefaultIndex < 0)
+            {
+                return true; // 无默认参数
+            }
+
+            for (int i = firstDefaultIndex; i < paramInfos.Length; i++)
+            {
+                if (!paramInfos[i].HasDefaultValue)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>

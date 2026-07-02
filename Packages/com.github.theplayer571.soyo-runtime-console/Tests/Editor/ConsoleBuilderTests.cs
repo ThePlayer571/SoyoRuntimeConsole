@@ -579,5 +579,297 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         }
 
         #endregion
+
+        #region 默认参数
+
+        /// <summary>
+        /// 带默认参数的命令 Fixture：cmd(int a, int b = 1, int c = 2)。
+        /// </summary>
+        [TargetConsoleKey("Tests")]
+        private class DefaultParamTwoDefaultsFixture
+        {
+            public static int LastA { get; set; }
+            public static int LastB { get; set; }
+            public static int LastC { get; set; }
+
+            [ConsoleCommand("default_test")]
+            private static void DefaultTest(int a, int b = 1, int c = 2)
+            {
+                LastA = a;
+                LastB = b;
+                LastC = c;
+            }
+        }
+
+        /// <summary>
+        /// 全部参数都有默认值：cmd(int a = 10, int b = 20)。
+        /// </summary>
+        [TargetConsoleKey("Tests")]
+        private class DefaultParamAllOptionalFixture
+        {
+            public static int LastA { get; set; }
+            public static int LastB { get; set; }
+
+            [ConsoleCommand("default_all_opt")]
+            private static void DefaultAllOpt(int a = 10, int b = 20)
+            {
+                LastA = a;
+                LastB = b;
+            }
+        }
+
+        /// <summary>
+        /// 单个参数带默认值：cmd(int value = 42)。
+        /// </summary>
+        [TargetConsoleKey("Tests")]
+        private class DefaultParamSingleFixture
+        {
+            public static int LastValue { get; set; }
+
+            [ConsoleCommand("default_single")]
+            private static void DefaultSingle(int value = 42)
+            {
+                LastValue = value;
+            }
+        }
+
+        /// <summary>
+        /// 混合类型默认参数：cmd(int count, string name = "default", float ratio = 1.0f)。
+        /// </summary>
+        [TargetConsoleKey("Tests")]
+        private class DefaultParamMixedFixture
+        {
+            public static int LastCount { get; set; }
+            public static string LastName { get; set; }
+            public static float LastRatio { get; set; }
+
+            [ConsoleCommand("default_mixed")]
+            private static void DefaultMixed(int count, string name = "default", float ratio = 1.0f)
+            {
+                LastCount = count;
+                LastName = name;
+                LastRatio = ratio;
+            }
+        }
+
+        /// <summary>
+        /// 无默认参数的控制组 Fixture。
+        /// </summary>
+        [TargetConsoleKey("Tests")]
+        private class DefaultParamNoDefaultsFixture
+        {
+            public static bool WasCalled { get; set; }
+
+            [ConsoleCommand("default_no_def")]
+            private static void DefaultNoDefaults(int a, int b)
+            {
+                WasCalled = true;
+            }
+        }
+
+        [Test]
+        public void DefaultParam_ExpandsToMultipleVariants()
+        {
+            var console = new ConsoleBuilder("Tests")
+                .RegisterFromClass<DefaultParamTwoDefaultsFixture>()
+                .Build();
+
+            // cmd(int a, int b = 1, int c = 2) 应生成 3 个变体
+            // 变体 1: 1 handler (a)
+            // 变体 2: 2 handlers (a, b)
+            // 变体 3: 3 handlers (a, b, c)
+            var commands = console.Commands
+                .Where(c => c.CommandName.Name == "default_test")
+                .ToList();
+
+            Assert.That(commands.Count, Is.EqualTo(3),
+                "Should generate 3 variants for method with 2 default parameters.");
+
+            var handlerCounts = commands.Select(c => c.ParameterHandlers.Count).OrderBy(n => n).ToList();
+            Assert.That(handlerCounts, Is.EqualTo(new[] { 1, 2, 3 }),
+                "Variants should have 1, 2, and 3 handlers respectively.");
+        }
+
+        [Test]
+        public void DefaultParam_UsesDefaults()
+        {
+            DefaultParamTwoDefaultsFixture.LastA = 0;
+            DefaultParamTwoDefaultsFixture.LastB = 0;
+            DefaultParamTwoDefaultsFixture.LastC = 0;
+
+            var console = new ConsoleBuilder("Tests")
+                .RegisterFromClass<DefaultParamTwoDefaultsFixture>()
+                .Build();
+
+            // 只提供第一个参数
+            console.SetInputText("default_test 100");
+            Assert.IsTrue(console.SendInput());
+
+            Assert.That(DefaultParamTwoDefaultsFixture.LastA, Is.EqualTo(100));
+            Assert.That(DefaultParamTwoDefaultsFixture.LastB, Is.EqualTo(1),
+                "Second parameter should use default value 1.");
+            Assert.That(DefaultParamTwoDefaultsFixture.LastC, Is.EqualTo(2),
+                "Third parameter should use default value 2.");
+        }
+
+        [Test]
+        public void DefaultParam_AllArgsProvided()
+        {
+            DefaultParamTwoDefaultsFixture.LastA = 0;
+            DefaultParamTwoDefaultsFixture.LastB = 0;
+            DefaultParamTwoDefaultsFixture.LastC = 0;
+
+            var console = new ConsoleBuilder("Tests")
+                .RegisterFromClass<DefaultParamTwoDefaultsFixture>()
+                .Build();
+
+            // 提供全部三个参数
+            console.SetInputText("default_test 10 20 30");
+            Assert.IsTrue(console.SendInput());
+
+            Assert.That(DefaultParamTwoDefaultsFixture.LastA, Is.EqualTo(10));
+            Assert.That(DefaultParamTwoDefaultsFixture.LastB, Is.EqualTo(20));
+            Assert.That(DefaultParamTwoDefaultsFixture.LastC, Is.EqualTo(30));
+        }
+
+        [Test]
+        public void DefaultParam_AllOptional_NoArgsProvided()
+        {
+            DefaultParamAllOptionalFixture.LastA = 0;
+            DefaultParamAllOptionalFixture.LastB = 0;
+
+            var console = new ConsoleBuilder("Tests")
+                .RegisterFromClass<DefaultParamAllOptionalFixture>()
+                .Build();
+
+            // 不提供参数
+            console.SetInputText("default_all_opt");
+            Assert.IsTrue(console.SendInput());
+
+            Assert.That(DefaultParamAllOptionalFixture.LastA, Is.EqualTo(10),
+                "Should use default value 10.");
+            Assert.That(DefaultParamAllOptionalFixture.LastB, Is.EqualTo(20),
+                "Should use default value 20.");
+        }
+
+        [Test]
+        public void DefaultParam_AllOptional_SomeArgsProvided()
+        {
+            DefaultParamAllOptionalFixture.LastA = 0;
+            DefaultParamAllOptionalFixture.LastB = 0;
+
+            var console = new ConsoleBuilder("Tests")
+                .RegisterFromClass<DefaultParamAllOptionalFixture>()
+                .Build();
+
+            // 只提供第一个参数
+            console.SetInputText("default_all_opt 99");
+            Assert.IsTrue(console.SendInput());
+
+            Assert.That(DefaultParamAllOptionalFixture.LastA, Is.EqualTo(99));
+            Assert.That(DefaultParamAllOptionalFixture.LastB, Is.EqualTo(20),
+                "Should use default value 20.");
+        }
+
+        [Test]
+        public void DefaultParam_SingleOptional_NoArgs()
+        {
+            DefaultParamSingleFixture.LastValue = 0;
+
+            var console = new ConsoleBuilder("Tests")
+                .RegisterFromClass<DefaultParamSingleFixture>()
+                .Build();
+
+            // 无参
+            console.SetInputText("default_single");
+            Assert.IsTrue(console.SendInput());
+
+            Assert.That(DefaultParamSingleFixture.LastValue, Is.EqualTo(42),
+                "Should use default value 42.");
+        }
+
+        [Test]
+        public void DefaultParam_SingleOptional_WithArg()
+        {
+            DefaultParamSingleFixture.LastValue = 0;
+
+            var console = new ConsoleBuilder("Tests")
+                .RegisterFromClass<DefaultParamSingleFixture>()
+                .Build();
+
+            // 提供参数
+            console.SetInputText("default_single 77");
+            Assert.IsTrue(console.SendInput());
+
+            Assert.That(DefaultParamSingleFixture.LastValue, Is.EqualTo(77));
+        }
+
+        [Test]
+        public void DefaultParam_MixedTypes_UsesDefaults()
+        {
+            DefaultParamMixedFixture.LastCount = 0;
+            DefaultParamMixedFixture.LastName = null;
+            DefaultParamMixedFixture.LastRatio = 0f;
+
+            var console = new ConsoleBuilder("Tests")
+                .RegisterFromClass<DefaultParamMixedFixture>()
+                .Build();
+
+            // 只提供必选参数
+            console.SetInputText("default_mixed 5");
+            Assert.IsTrue(console.SendInput());
+
+            Assert.That(DefaultParamMixedFixture.LastCount, Is.EqualTo(5));
+            Assert.That(DefaultParamMixedFixture.LastName, Is.EqualTo("default"),
+                "Should use default value.");
+            Assert.That(DefaultParamMixedFixture.LastRatio, Is.EqualTo(1.0f),
+                "Should use default value.");
+        }
+
+        [Test]
+        public void DefaultParam_MixedTypes_AllArgsProvided()
+        {
+            DefaultParamMixedFixture.LastCount = 0;
+            DefaultParamMixedFixture.LastName = null;
+            DefaultParamMixedFixture.LastRatio = 0f;
+
+            var console = new ConsoleBuilder("Tests")
+                .RegisterFromClass<DefaultParamMixedFixture>()
+                .Build();
+
+            // 提供全部参数
+            console.SetInputText("default_mixed 3 hello 2.5");
+            Assert.IsTrue(console.SendInput());
+
+            Assert.That(DefaultParamMixedFixture.LastCount, Is.EqualTo(3));
+            Assert.That(DefaultParamMixedFixture.LastName, Is.EqualTo("hello"));
+            Assert.That(DefaultParamMixedFixture.LastRatio, Is.EqualTo(2.5f));
+        }
+
+        [Test]
+        public void DefaultParam_NonDefaultMethod_Unaffected()
+        {
+            DefaultParamNoDefaultsFixture.WasCalled = false;
+
+            var console = new ConsoleBuilder("Tests")
+                .RegisterFromClass<DefaultParamNoDefaultsFixture>()
+                .Build();
+
+            // 无默认参数的方法应只有 1 个命令定义
+            var commands = console.Commands
+                .Where(c => c.CommandName.Name == "default_no_def")
+                .ToList();
+
+            Assert.That(commands.Count, Is.EqualTo(1),
+                "Method without default parameters should have exactly 1 command definition.");
+            Assert.That(commands[0].ParameterHandlers.Count, Is.EqualTo(2));
+
+            // 执行验证
+            console.SetInputText("default_no_def 1 2");
+            Assert.IsTrue(console.SendInput());
+            Assert.IsTrue(DefaultParamNoDefaultsFixture.WasCalled);
+        }
+
+        #endregion
     }
 }

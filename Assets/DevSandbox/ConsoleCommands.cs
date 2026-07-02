@@ -148,5 +148,11 @@ namespace Soyo.SoyoRuntimeConsole.DevSandbox
         {
             Debug.Log($"other_test: {value}");
         }
+
+        [ConsoleCommand]
+        public static void test_default_param(int value = 42, string name = "default")
+        {
+            Debug.Log($"test_default_param: value={value}, name={name}");
+        }
     }
 }
