@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -9,6 +10,7 @@ using Soyo.SoyoRuntimeConsole.ParameterHandlers;
 using Soyo.SoyoRuntimeConsole.ValueObjects;
 using UnityEngine;
 using UnityEngine.TestTools;
+using ConsoleKey = Soyo.SoyoRuntimeConsole.ValueObjects.ConsoleKey;
 
 namespace Soyo.SoyoRuntimeConsole.Tests.Editor
 {
@@ -175,7 +177,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         /// 用于需要访问 ParameterHandlers 或 Execute 的测试。
         /// </summary>
         private static (List<ConsoleCommandDefinition> Commands, Dictionary<CommandName, string> HelpTexts)
-            BuildScannedClass(System.Type type, ConsoleKey? targetKey = null)
+            BuildScannedClass(Type type, ConsoleKey? targetKey = null)
         {
             var registry = new ParameterHandlerRegistry();
             ConsoleParameterHandlerScanner.ScanType(type, registry);
@@ -190,7 +192,30 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
                 var handlers = new IParameterHandler[paramInfos.Length];
                 for (int i = 0; i < paramInfos.Length; i++)
                 {
-                    handlers[i] = registry.HandlerOf(paramInfos[i]);
+                    var paramInfo = paramInfos[i];
+
+                    // 检测 [FixedField]
+                    var fixedFieldAttr = paramInfo.GetCustomAttribute<FixedFieldAttribute>();
+                    if (fixedFieldAttr != null)
+                    {
+                        var fixedFieldName = fixedFieldAttr.FixedField ?? paramInfo.Name;
+                        handlers[i] = new FixedFieldParameterHandler(fixedFieldName);
+                        continue;
+                    }
+
+                    // 解析参数名
+                    var paramName = paramInfo.GetCustomAttribute<CommandParameterAttribute>()?.Name ?? paramInfo.Name;
+
+                    // 收集 HandlerSelectionAttribute 子类
+                    var selectionAttrs = paramInfo.GetCustomAttributes<HandlerSelectionAttribute>(inherit: false);
+                    var attrList = new List<Attribute>();
+                    foreach (var attr in selectionAttrs)
+                    {
+                        attrList.Add(attr);
+                    }
+                    var attrs = attrList.ToArray();
+
+                    handlers[i] = registry.HandlerOf(paramInfo.ParameterType, paramName, attrs);
                 }
                 commands.Add(new AttributeCommandDefinition(entry.Method, entry.CommandName, handlers));
             }

@@ -12,7 +12,7 @@ namespace Soyo.SoyoRuntimeConsole.Samples.UsingConsoleBuilder
             var console = new ConsoleBuilder("UsingBuilderConsoleB") // 设置控制台Key
                 .RegisterFromAssembly(this.GetType().Assembly) // 扫描程序集
                 .RegisterHelpText(new CommandName("run_command_b1"), "help text of run_command_b1") // 手动注册HelpText
-                .RegisterDynamicHandler((type, name) => // 使用 DynamicHandler
+                .RegisterDynamicHandler((type, name, _) => // 使用 DynamicHandler
                 {
                     // 使用 [ConsoleParameterHandler] 定义，无法同时支持解析MyNumber的子类
                     // 使用 DynamicHandler 支持

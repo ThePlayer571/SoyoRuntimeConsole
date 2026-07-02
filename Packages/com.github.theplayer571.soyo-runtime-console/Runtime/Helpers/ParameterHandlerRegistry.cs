@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection;
-using Soyo.SoyoRuntimeConsole.Attributes;
 using Soyo.SoyoRuntimeConsole.ParameterHandlers;
 using UnityEngine;
 
@@ -41,33 +39,44 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
     public class ParameterHandlerRegistry
     {
         /// <summary>
-        /// 参数处理器工厂委托。接收目标类型和参数名称，返回对应的参数处理器实例。
+        /// 不考虑 <see cref="Attributes.HandlerSelectionAttribute"/> 的简单参数处理器工厂委托。
+        /// 接收目标类型和参数名称，返回对应的参数处理器实例。
+        /// 当 <see cref="HandlerOf"/> 的 <c>attributes</c> 参数为空或 null 时使用此类工厂。
         /// </summary>
         /// <param name="type">需要处理的类型</param>
         /// <param name="name">参数名称（用于提示），可为 null</param>
         /// <returns>对应类型的参数处理器实例</returns>
-        public delegate IParameterHandler HandlerFactory([DisallowNull] Type type, [DisallowNull] string name);
+        public delegate IParameterHandler SimpleHandlerFactory([DisallowNull] Type type, [DisallowNull] string name);
 
         /// <summary>
-        /// 动态处理器工厂委托。接收目标类型和参数名称，若该委托能处理此类型则返回对应的 <see cref="IParameterHandler"/> 实例，
+        /// 动态处理器工厂委托。接收目标类型、参数名称以及参数上的
+        /// <see cref="Attributes.HandlerSelectionAttribute"/> 子类数组（只读，允许为 null/空）。
+        /// 若该委托能处理此类型则返回对应的 <see cref="IParameterHandler"/> 实例，
         /// 否则返回 null 表示"不处理此类型"。
         /// </summary>
         /// <param name="type">需要处理的类型</param>
         /// <param name="name">参数名称（用于提示），可为 null</param>
+        /// <param name="attributes">
+        /// 参数上标记的 <see cref="Attributes.HandlerSelectionAttribute"/> 子类数组（只读）。
+        /// 可为 null 或空数组。调用方不应修改数组内容。
+        /// </param>
         /// <returns>若能处理则返回处理器实例，否则返回 null</returns>
         [return: MaybeNull]
-        public delegate IParameterHandler DynamicHandlerFactory([DisallowNull] Type type, [DisallowNull] string name);
+        public delegate IParameterHandler DynamicHandlerFactory(
+            [DisallowNull] Type type,
+            [DisallowNull] string name,
+            [AllowNull] Attribute[] attributes);
 
         /// <summary>
         /// 可变阶段：存储每个类型对应的处理器工厂列表。
         /// 单一工厂直接使用；多个工厂在 <see cref="Freeze"/> 时自动组合为 <see cref="CompositeParameterHandler"/>。
         /// </summary>
-        private Dictionary<Type, List<HandlerFactory>> _factories = new();
+        private Dictionary<Type, List<SimpleHandlerFactory>> _factories = new();
 
         /// <summary>
         /// 冻结阶段：编译后的单工厂字典。为 null 表示尚未冻结。
         /// </summary>
-        private Dictionary<Type, HandlerFactory> _frozenFactories;
+        private Dictionary<Type, SimpleHandlerFactory> _frozenFactories;
 
         /// <summary>
         /// 可变阶段：动态处理器工厂列表。按注册顺序存储，<see cref="HandlerOf"/> 时按序检查，首个非 null 结果获胜。
@@ -138,8 +147,8 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// 仅在 <see cref="Freeze"/> 之前有效。
         /// </summary>
         /// <typeparam name="T">目标类型</typeparam>
-        /// <param name="factory">处理器工厂委托</param>
-        public void Register<T>([DisallowNull] HandlerFactory factory)
+        /// <param name="factory">处理器工厂委托（不考虑 attributes）</param>
+        public void Register<T>([DisallowNull] SimpleHandlerFactory factory)
         {
             Register(typeof(T), factory);
         }
@@ -150,8 +159,8 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// 仅在 <see cref="Freeze"/> 之前有效。
         /// </summary>
         /// <param name="type">目标类型</param>
-        /// <param name="factory">处理器工厂委托</param>
-        public void Register([DisallowNull] Type type, [DisallowNull] HandlerFactory factory)
+        /// <param name="factory">处理器工厂委托（不考虑 attributes）</param>
+        public void Register([DisallowNull] Type type, [DisallowNull] SimpleHandlerFactory factory)
         {
             if (_isFrozen)
             {
@@ -170,7 +179,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
 
                 if (!_factories.TryGetValue(type, out var list))
                 {
-                    list = new List<HandlerFactory>();
+                    list = new List<SimpleHandlerFactory>();
                     _factories[type] = list;
                 }
 
@@ -192,7 +201,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         }
 
         /// <summary>
-        /// 注册一个动态处理器工厂。动态处理器在 <see cref="HandlerOf(Type, string)"/> 的解析链中，
+        /// 注册一个动态处理器工厂。动态处理器在 <see cref="HandlerOf(Type, string, Attribute[])"/> 的解析链中，
         /// 在枚举和数组动态构造之后、StringParameterHandler 降级之前被检查。
         /// 工厂应返回 null 表示"不处理此类型"，返回非 null 值表示"处理此类型并使用返回的处理器"。
         /// 多个动态处理器按注册顺序检查，首个返回非 null 的获胜。
@@ -204,7 +213,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             if (_isFrozen)
             {
                 Debug.LogWarning(
-                    $"[ParameterHandlerRegistry] Cannot register dynamic handler after Freeze(). Ignoring.");
+                    "[ParameterHandlerRegistry] Cannot register dynamic handler after Freeze(). Ignoring.");
                 return;
             }
 
@@ -242,7 +251,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                     return;
                 }
 
-                var frozen = new Dictionary<Type, HandlerFactory>(_factories.Count);
+                var frozen = new Dictionary<Type, SimpleHandlerFactory>(_factories.Count);
                 foreach (var kv in _factories)
                 {
                     if (kv.Value.Count == 1)
@@ -267,7 +276,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                 // 快照动态处理器工厂
                 _frozenDynamicFactories = _dynamicFactories.Count > 0
                     ? _dynamicFactories.ToArray()
-                    : System.Array.Empty<DynamicHandlerFactory>();
+                    : Array.Empty<DynamicHandlerFactory>();
 
                 _isFrozen = true;
                 _factories.Clear();          // 释放可变字典引用，帮助 GC
@@ -284,11 +293,17 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// </summary>
         /// <typeparam name="T">目标类型</typeparam>
         /// <param name="name">参数名称（用于提示），为 null 时使用类型名</param>
+        /// <param name="attributes">
+        /// 参数上标记的 <see cref="Attributes.HandlerSelectionAttribute"/> 子类数组（只读）。
+        /// 可为 null 或空数组。
+        /// </param>
         /// <returns>对应的参数处理器。若类型无注册且无法动态构造，则降级返回 StringParameterHandler。</returns>
         [return: NotNull]
-        public IParameterHandler HandlerOf<T>([AllowNull] string name = null)
+        public IParameterHandler HandlerOf<T>(
+            [AllowNull] string name = null,
+            [AllowNull] Attribute[] attributes = null)
         {
-            return HandlerOf(typeof(T), name);
+            return HandlerOf(typeof(T), name, attributes);
         }
 
         /// <summary>
@@ -297,14 +312,21 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// 1. 已注册的工厂（若已冻结则查编译字典；否则查可变字典并即时组合）
         /// 2. 枚举类型 — 动态构造 EnumParameterHandler
         /// 3. 一维数组类型 — 动态构造 ArrayParameterHandler&lt;T&gt;
-        /// 4. 动态处理器工厂 — 按注册顺序检查，首个返回非 null 的获胜
+        /// 4. 动态处理器工厂 — 按注册顺序检查，首个返回非 null 的获胜（传入 <paramref name="attributes"/>）
         /// 5. 降级 — 警告并返回 StringParameterHandler
         /// </summary>
         /// <param name="type">目标类型</param>
         /// <param name="name">参数名称（用于提示），为 null 时使用类型名</param>
+        /// <param name="attributes">
+        /// 参数上标记的 <see cref="Attributes.HandlerSelectionAttribute"/> 子类数组（只读）。
+        /// 可为 null 或空数组。调用方不应修改数组内容。
+        /// </param>
         /// <returns>对应的参数处理器</returns>
         [return: NotNull]
-        public IParameterHandler HandlerOf([DisallowNull] Type type, [AllowNull] string name = null)
+        public IParameterHandler HandlerOf(
+            [DisallowNull] Type type,
+            [AllowNull] string name = null,
+            [AllowNull] Attribute[] attributes = null)
         {
             // 解引用 ref / out 参数类型（如 System.Int32& → System.Int32）
             if (type.IsByRef)
@@ -319,7 +341,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             var effectiveName = name ?? type.Name;
 
             // 1. 查找已注册的工厂
-            HandlerFactory factory = null;
+            SimpleHandlerFactory factory = null;
 
             if (_isFrozen && _frozenFactories != null)
             {
@@ -329,7 +351,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             else
             {
                 // 可变阶段：从可变字典获取并即时组合
-                List<HandlerFactory> factoryList;
+                List<SimpleHandlerFactory> factoryList;
                 lock (_lock)
                 {
                     _factories.TryGetValue(type, out factoryList);
@@ -355,11 +377,11 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             // 3. 一维数组类型 — 动态构造
             if (type.IsArray && type.GetArrayRank() == 1)
             {
-                return CreateArrayHandler(type, effectiveName);
+                return CreateArrayHandler(type, effectiveName, attributes);
             }
 
             // 4. 动态处理器工厂 — 按注册顺序检查
-            var dynamicResult = TryDynamicHandlers(type, effectiveName);
+            var dynamicResult = TryDynamicHandlers(type, effectiveName, attributes);
             if (dynamicResult != null)
             {
                 return dynamicResult;
@@ -372,44 +394,6 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             return new StringParameterHandler(effectiveName);
         }
 
-        /// <summary>
-        /// 从反射参数信息创建对应的参数处理器。
-        /// 自动检测参数上的 Attribute（如 <see cref="FixedFieldAttribute"/>、<see cref="CommandParameterAttribute"/>）
-        /// 并创建合适的处理器。这是为 Attribute 驱动的命令系统设计的统一入口点。
-        /// </summary>
-        /// <remarks>
-        /// <b>注意：此方法当前使用 if-else 式的 Attribute 检测，这是一个临时机制。</b>
-        /// 未来会提出新的扩展机制（如可注册的 Attribute 处理器策略）来替代这种硬编码的写法，
-        /// 使系统对新的参数 Attribute 类型具备更好的开放封闭性。
-        /// </remarks>
-        /// <param name="paramInfo">方法的参数反射信息</param>
-        /// <returns>对应的参数处理器</returns>
-        [return: NotNull]
-        public IParameterHandler HandlerOf([DisallowNull] ParameterInfo paramInfo)
-        {
-            // 1. 检测 [FixedField] — 属性驱动的固定字段处理器
-            var fixedFieldAttr = paramInfo.GetCustomAttribute<FixedFieldAttribute>();
-            if (fixedFieldAttr != null)
-            {
-                if (paramInfo.ParameterType != typeof(object))
-                {
-                    Debug.LogWarning(
-                        $"[ParameterHandlerRegistry] Parameter '{paramInfo.Name}' has [FixedField] " +
-                        $"but its type is '{paramInfo.ParameterType.Name}'. " +
-                        "FixedField parameters should be of type 'object'. Proceeding anyway.");
-                }
-
-                var fixedFieldName = fixedFieldAttr.FixedField ?? paramInfo.Name;
-                return new FixedFieldParameterHandler(fixedFieldName);
-            }
-
-            // 2. 解析参数名（[CommandParameter] 或原始参数名）
-            var paramName = paramInfo.GetCustomAttribute<CommandParameterAttribute>()?.Name ?? paramInfo.Name;
-
-            // 3. 委托给类型驱动的解析
-            return HandlerOf(paramInfo.ParameterType, paramName);
-        }
-
         #endregion
 
         #region 内部辅助方法
@@ -419,7 +403,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// 单一工厂直接调用；多个工厂组合为 CompositeParameterHandler。
         /// </summary>
         private static IParameterHandler CreateHandlerFromFactories(
-            Type type, string name, List<HandlerFactory> factories)
+            Type type, string name, List<SimpleHandlerFactory> factories)
         {
             if (factories.Count == 1)
             {
@@ -441,9 +425,14 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// 冻结阶段使用 <see cref="_frozenDynamicFactories"/> 快照数组（无锁）；
         /// 可变阶段在锁内快照 <see cref="_dynamicFactories"/> 列表后遍历。
         /// </summary>
+        /// <param name="attributes">
+        /// 参数上标记的 <see cref="Attributes.HandlerSelectionAttribute"/> 子类数组（只读）。
+        /// 可为 null 或空数组。
+        /// </param>
         /// <returns>若能处理则返回处理器实例，否则返回 null</returns>
         [return: MaybeNull]
-        private IParameterHandler TryDynamicHandlers(Type type, string name)
+        private IParameterHandler TryDynamicHandlers(
+            Type type, string name, [AllowNull] Attribute[] attributes)
         {
             if (_isFrozen)
             {
@@ -452,7 +441,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                 {
                     foreach (var factory in _frozenDynamicFactories)
                     {
-                        var result = factory(type, name);
+                        var result = factory(type, name, attributes);
                         if (result != null)
                         {
                             return result;
@@ -471,7 +460,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
 
                 foreach (var factory in snapshot)
                 {
-                    var result = factory(type, name);
+                    var result = factory(type, name, attributes);
                     if (result != null)
                     {
                         return result;
@@ -485,7 +474,8 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// <summary>
         /// 动态构造数组参数处理器。
         /// </summary>
-        private IParameterHandler CreateArrayHandler(Type arrayType, string name)
+        private IParameterHandler CreateArrayHandler(
+            Type arrayType, string name, [AllowNull] Attribute[] attributes)
         {
             var elementType = arrayType.GetElementType();
             if (elementType == null)
@@ -497,7 +487,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             }
 
             // 递归获取元素类型的处理器
-            var elementHandler = HandlerOf(elementType, name);
+            var elementHandler = HandlerOf(elementType, name, attributes);
 
             // 构造 ArrayParameterHandler<T>
             var handlerType = typeof(ArrayParameterHandler<>).MakeGenericType(elementType);

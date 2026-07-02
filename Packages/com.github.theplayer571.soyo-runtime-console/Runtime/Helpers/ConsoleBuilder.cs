@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using Soyo.SoyoRuntimeConsole.Attributes;
 using Soyo.SoyoRuntimeConsole.Commands;
+using Soyo.SoyoRuntimeConsole.ParameterHandlers;
 using Soyo.SoyoRuntimeConsole.ValueObjects;
 using UnityEngine;
 using ConsoleKey = Soyo.SoyoRuntimeConsole.ValueObjects.ConsoleKey;
@@ -185,7 +186,10 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// 仅在 <see cref="Build"/> 或 <see cref="BuildConfig"/> 之前有效（<see cref="ParameterHandlerRegistry.Freeze"/> 之后不可再注册）。
         /// </summary>
         /// <typeparam name="T">目标类型</typeparam>
-        /// <param name="factory">处理器工厂委托，接收目标类型和参数名称，返回对应的 <see cref="IParameterHandler"/> 实例</param>
+        /// <param name="factory">
+        /// 简单处理器工厂委托（不考虑 <see cref="HandlerSelectionAttribute"/>），
+        /// 接收目标类型和参数名称，返回对应的 <see cref="IParameterHandler"/> 实例
+        /// </param>
         /// <returns>当前的 ConsoleBuilder 实例（用于链式调用）</returns>
         /// <example>
         /// <code>
@@ -197,7 +201,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// </example>
         [return: NotNull]
         public ConsoleBuilder Register<T>(
-            [DisallowNull] ParameterHandlerRegistry.HandlerFactory factory)
+            [DisallowNull] ParameterHandlerRegistry.SimpleHandlerFactory factory)
         {
             _registry.Register<T>(factory);
             return this;
@@ -210,12 +214,15 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         /// 仅在 <see cref="Build"/> 或 <see cref="BuildConfig"/> 之前有效（<see cref="ParameterHandlerRegistry.Freeze"/> 之后不可再注册）。
         /// </summary>
         /// <param name="type">目标类型</param>
-        /// <param name="factory">处理器工厂委托，接收目标类型和参数名称，返回对应的 <see cref="IParameterHandler"/> 实例</param>
+        /// <param name="factory">
+        /// 简单处理器工厂委托（不考虑 <see cref="HandlerSelectionAttribute"/>），
+        /// 接收目标类型和参数名称，返回对应的 <see cref="IParameterHandler"/> 实例
+        /// </param>
         /// <returns>当前的 ConsoleBuilder 实例（用于链式调用）</returns>
         [return: NotNull]
         public ConsoleBuilder Register(
             [DisallowNull] Type type,
-            [DisallowNull] ParameterHandlerRegistry.HandlerFactory factory)
+            [DisallowNull] ParameterHandlerRegistry.SimpleHandlerFactory factory)
         {
             _registry.Register(type, factory);
             return this;
@@ -238,14 +245,18 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
         }
 
         /// <summary>
-        /// 注册一个动态处理器工厂，用于根据类型特征（如泛型构造、类型模式等）动态匹配参数处理逻辑。
-        /// 动态处理器在 <see cref="ParameterHandlerRegistry.HandlerOf(Type, string)"/> 解析链中，
+        /// 注册一个动态处理器工厂，用于根据类型特征（如泛型构造、类型模式等）以及参数上的
+        /// <see cref="HandlerSelectionAttribute"/> 子类动态匹配参数处理逻辑。
+        /// 动态处理器在 <see cref="ParameterHandlerRegistry.HandlerOf(Type, string, Attribute[])"/> 解析链中，
         /// 在枚举和数组动态构造之后、StringParameterHandler 降级之前被检查。
         /// 工厂应返回 null 表示"不处理此类型"，返回非 null 值表示"处理此类型并使用返回的处理器"。
         /// 多个动态处理器按注册顺序检查，首个返回非 null 的获胜。
         /// 仅在 <see cref="Build"/> 或 <see cref="BuildConfig"/> 之前有效（<see cref="ParameterHandlerRegistry.Freeze"/> 之后不可再注册）。
         /// </summary>
-        /// <param name="factory">动态处理器工厂委托</param>
+        /// <param name="factory">
+        /// 动态处理器工厂委托，接收目标类型、参数名称和参数上的
+        /// <see cref="HandlerSelectionAttribute"/> 子类数组（只读）
+        /// </param>
         /// <returns>当前的 ConsoleBuilder 实例（用于链式调用）</returns>
         [return: NotNull]
         public ConsoleBuilder RegisterDynamicHandler(
@@ -309,7 +320,7 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
 
                 for (int i = 0; i < paramInfos.Length; i++)
                 {
-                    handlers[i] = _registry.HandlerOf(paramInfos[i]);
+                    handlers[i] = ResolveHandler(paramInfos[i]);
                 }
 
                 // 检查是否有未能初始化的处理器，若存在则跳过整个命令
@@ -340,6 +351,53 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
             }
 
             _pendingCommands.Clear();
+        }
+
+        /// <summary>
+        /// 从反射参数信息解析对应的参数处理器。
+        /// 处理 <see cref="FixedFieldAttribute"/>、<see cref="CommandParameterAttribute"/> 等一等公民特性，
+        /// 并收集参数上的 <see cref="HandlerSelectionAttribute"/> 子类传递给注册表的 <see cref="ParameterHandlerRegistry.HandlerOf"/>。
+        /// </summary>
+        /// <param name="paramInfo">方法的参数反射信息</param>
+        /// <returns>对应的参数处理器</returns>
+        [return: NotNull]
+        private IParameterHandler ResolveHandler([DisallowNull] ParameterInfo paramInfo)
+        {
+            // 1. 检测 [FixedField] — 属性驱动的固定字段处理器
+            var fixedFieldAttr = paramInfo.GetCustomAttribute<FixedFieldAttribute>();
+            if (fixedFieldAttr != null)
+            {
+                if (paramInfo.ParameterType != typeof(object))
+                {
+                    Debug.LogWarning(
+                        $"[ConsoleBuilder] Parameter '{paramInfo.Name}' has [FixedField] " +
+                        $"but its type is '{paramInfo.ParameterType.Name}'. " +
+                        "FixedField parameters should be of type 'object'. Proceeding anyway.");
+                }
+
+                var fixedFieldName = fixedFieldAttr.FixedField ?? paramInfo.Name;
+                return new FixedFieldParameterHandler(fixedFieldName);
+            }
+
+            // 2. 解析参数名（[CommandParameter] 或原始参数名）
+            var paramName = paramInfo.GetCustomAttribute<CommandParameterAttribute>()?.Name ?? paramInfo.Name;
+
+            // 3. 收集参数上的 HandlerSelectionAttribute 子类（只收集用户扩展的特性，
+            //    不包含 FixedFieldAttribute、CommandParameterAttribute 等一等公民特性）
+            var selectionAttrs = paramInfo.GetCustomAttributes<HandlerSelectionAttribute>(inherit: false);
+            Attribute[] attrs;
+            {
+                var list = new List<Attribute>();
+                foreach (var attr in selectionAttrs)
+                {
+                    list.Add(attr);
+                }
+
+                attrs = list.Count > 0 ? list.ToArray() : Array.Empty<Attribute>();
+            }
+
+            // 4. 委托给注册表的类型 + 属性驱动解析
+            return _registry.HandlerOf(paramInfo.ParameterType, paramName, attrs);
         }
 
         /// <summary>

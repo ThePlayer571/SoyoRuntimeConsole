@@ -311,7 +311,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         public void RegisterDynamicHandler_FluentApi_ReturnsBuilder()
         {
             var builder = new ConsoleBuilder("chain_test")
-                .RegisterDynamicHandler((type, name) => null);
+                .RegisterDynamicHandler((type, name, _) => null);
 
             // 验证流畅链式调用不崩溃
             Assert.DoesNotThrow(() => builder.Build());
@@ -321,7 +321,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         public void RegisterDynamicHandler_BuildSucceeds()
         {
             var builder = new ConsoleBuilder("Tests")
-                .RegisterDynamicHandler((type, name) =>
+                .RegisterDynamicHandler((type, name, _) =>
                     type == typeof(System.Version)
                         ? new StringParameterHandler(name ?? "Version")
                         : null);

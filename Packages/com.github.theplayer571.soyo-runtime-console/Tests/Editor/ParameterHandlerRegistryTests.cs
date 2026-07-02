@@ -358,7 +358,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         public void DynamicHandler_TypeMatches_ReturnsCustomHandler()
         {
             // 注册一个匹配 System.Version 的动态处理器
-            _registry.RegisterDynamicHandler((type, name) =>
+            _registry.RegisterDynamicHandler((type, name, _) =>
                 type == typeof(System.Version)
                     ? new StringParameterHandler(name ?? "Version")
                     : null);
@@ -373,7 +373,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         public void DynamicHandler_TypeDoesNotMatch_FallsThrough()
         {
             // 注册一个只处理 int 的动态处理器（不处理 DateTime）
-            _registry.RegisterDynamicHandler((type, name) =>
+            _registry.RegisterDynamicHandler((type, name, _) =>
                 type == typeof(int)
                     ? new IntegerParameterHandler(name ?? "num")
                     : null);
@@ -392,12 +392,12 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         public void DynamicHandler_MultipleFactories_FirstNonNullWins()
         {
             // 注册两个动态处理器，都匹配 System.Version
-            _registry.RegisterDynamicHandler((type, name) =>
+            _registry.RegisterDynamicHandler((type, name, _) =>
                 type == typeof(System.Version)
                     ? new IntegerParameterHandler(name ?? "ver")
                     : null);
 
-            _registry.RegisterDynamicHandler((type, name) =>
+            _registry.RegisterDynamicHandler((type, name, _) =>
                 type == typeof(System.Version)
                     ? new StringParameterHandler(name ?? "ver")
                     : null);
@@ -412,7 +412,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         public void DynamicHandler_GenericTypePattern_MatrixInt()
         {
             // 模拟 Matrix<T> 模式匹配：匹配任何封闭的 Matrix<T> 类型
-            _registry.RegisterDynamicHandler((type, name) =>
+            _registry.RegisterDynamicHandler((type, name, _) =>
             {
                 if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Matrix<>))
                 {
@@ -443,7 +443,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
             LogAssert.Expect(LogType.Warning,
                 "[ParameterHandlerRegistry] Cannot register dynamic handler after Freeze(). Ignoring.");
 
-            _registry.RegisterDynamicHandler((type, name) =>
+            _registry.RegisterDynamicHandler((type, name, _) =>
                 type == typeof(System.Version)
                     ? new StringParameterHandler(name ?? "Version")
                     : null);
@@ -461,7 +461,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         public void DynamicHandler_EnumAndArrayStillWork()
         {
             // 注册一个广泛的动态处理器，不处理枚举/数组
-            _registry.RegisterDynamicHandler((type, name) =>
+            _registry.RegisterDynamicHandler((type, name, _) =>
                 type == typeof(System.Version)
                     ? new StringParameterHandler(name ?? "Version")
                     : null);
@@ -479,7 +479,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         public void DynamicHandler_PrecedesFallback()
         {
             // 动态处理器处理 DateTime（没有内置注册）
-            _registry.RegisterDynamicHandler((type, name) =>
+            _registry.RegisterDynamicHandler((type, name, _) =>
                 type == typeof(System.DateTime)
                     ? new IntegerParameterHandler(name ?? "date")
                     : null);
@@ -495,7 +495,7 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         public void DynamicHandler_FrozenRegistry_ReadWorksAfterFreeze()
         {
             // 注册动态处理器
-            _registry.RegisterDynamicHandler((type, name) =>
+            _registry.RegisterDynamicHandler((type, name, _) =>
                 type == typeof(System.Version)
                     ? new StringParameterHandler(name ?? "Version")
                     : null);

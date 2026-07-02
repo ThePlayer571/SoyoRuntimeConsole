@@ -19,26 +19,32 @@ CommandLineAnalyzer 缓存分析数据
 
 
 
-## 新需求
+## 重构任务
 
-目前，通过 Attribute 标记函数定义ConsoleCommand的方式不支持 fixedField 参数类型（Soyo.SoyoRuntimeConsole.ParameterHandlers.FixedFieldParameterHandler）
+现在进行一个重构任务：
+（你不用考虑旧版兼容，现在是项目的未发布时期）
 
-我希望支持。
+目前，ParameterHandlerRegistry对ParameterHandler的确认，只依赖两个参数：Type 和 string parameterName。
 
-方式是：用户标记函数参数 [FixedField]，这个个参数必须是object。
+这远远不够。我还希望能通过 Attribute 来确认 ParameterHandler。
 
-## 细节
+现在所有的HandlerOf重载，都需要添加一个额外的参数：Attribute[] attributes。（注明attributes是只读的）（attributes允许为空）
+不会用Attribute作为最终的类型，应该使用一个抽象Attribute类，约定：读取时只读取这个类的子类。你需要给这个特性命名，它的语义是：给Parameter使用的、用于决定Parameterhandler选择的特性。
+（之所以想出这个机制，是为了不与现有的ParamterAttribute矛盾，不然attributes几乎总是不为null了，会少很多优化空间）
 
-1. 在 FixedFieldAttribute 的注释标明：这个参数始终返回 null
-2.FixedField 提供两个构造函数，FixedFieldAttribute(string fixedField) 和 无参。无参的话，使用函数参数名作为fixedField。
+### 架构设计
+
+Soyo.SoyoRuntimeConsole.Helpers.ParameterHandlerRegistry.HandlerFactory 的签名不用改，
+你给它的名称改了，现在它的语义是“不考虑attributes的handler工厂”。
+以后传arributes为空或null的，就去调用这个类型的HandlerFactory。
+
+DynamicHandlerFactory 改签名，加一个参数：Attribute[] attributes。
+
+这样，Soyo.SoyoRuntimeConsole.Helpers.ParameterHandlerRegistry._factories 依旧可以存在。
+
+你还需要把外部api改了，以适应现在的结构（主要是ConsoleBuilder的api，你要好好设计）
 
 
+### 额外说明
 
-
-
-
-
-
-
-todo
-用户能够参考Attribute决定handler（重构DynamicHandler机制）
+1. 永久移除Soyo.SoyoRuntimeConsole.Helpers.ParameterHandlerRegistry.HandlerOf的ParameterInfo重载。
