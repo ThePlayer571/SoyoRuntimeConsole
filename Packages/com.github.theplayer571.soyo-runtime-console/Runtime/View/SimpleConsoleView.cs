@@ -259,6 +259,7 @@ namespace Soyo.SoyoRuntimeConsole.View
 
         // 配置
         [Header("Configs")] [SerializeField] private bool showOnStart = false;
+        [SerializeField] private bool isSingleton = false;
         [SerializeField] private bool dontDestroyOnLoad = true;
         [SerializeField] private KeyCode toggleVisibilityKey = KeyCode.F1;
         [SerializeField] private int recordLogEntriesCount = 10;
@@ -282,8 +283,21 @@ namespace Soyo.SoyoRuntimeConsole.View
         private OutputView _outputView;
         private bool _showConsole = false;
 
+        public static SimpleConsoleView Instance { get; private set; }
+
         private void Awake()
         {
+            if (isSingleton)
+            {
+                if (Instance != null)
+                {
+                    Destroy(gameObject);
+                    return;
+                }
+
+                Instance = this;
+            }
+
             _showConsole = showOnStart;
             if (dontDestroyOnLoad) DontDestroyOnLoad(gameObject);
 
@@ -353,6 +367,8 @@ namespace Soyo.SoyoRuntimeConsole.View
 
         private void OnDestroy()
         {
+            if (Instance == this) Instance = null;
+
             inputField.onValueChanged.RemoveListener(OnValueChanged);
             _viewModel.OnLogEntry -= OnLogEntry;
         }
