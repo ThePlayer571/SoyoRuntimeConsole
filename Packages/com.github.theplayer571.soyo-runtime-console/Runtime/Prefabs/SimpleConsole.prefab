@@ -116,6 +116,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   showOnStart: 0
+  isSingleton: 0
   dontDestroyOnLoad: 1
   toggleVisibilityKey: 282
   recordLogEntriesCount: 10
@@ -413,7 +414,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Enter command here... (Tab for stack trace)
+  m_text: Enter command here... (Tab for stack trace, shift + up arrow for history)
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 123d67f32d66e894fb6e3254cc7e395b, type: 2}
   m_sharedMaterial: {fileID: 8214284693138664584, guid: 123d67f32d66e894fb6e3254cc7e395b, type: 2}

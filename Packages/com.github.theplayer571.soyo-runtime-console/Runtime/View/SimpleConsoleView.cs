@@ -290,6 +290,7 @@ namespace Soyo.SoyoRuntimeConsole.View
         private ConsoleViewModel _viewModel;
         private OutputView _outputView;
         private bool _showConsole = false;
+        private int _historyOffset = 0;
 
         public static SimpleConsoleView Instance { get; private set; }
 
@@ -329,8 +330,20 @@ namespace Soyo.SoyoRuntimeConsole.View
         {
             var hasInput = !string.IsNullOrEmpty(_viewModel.InputText);
 
+            // ESC: 关闭控制台
+            if (_showConsole && Input.GetKeyDown(KeyCode.Escape))
+            {
+                _showConsole = false;
+                _historyOffset = 0;
+                inputField.SetTextWithoutNotify(string.Empty);
+                view.gameObject.SetActive(false);
+                return;
+            }
+
             if (Input.GetKeyDown(KeyCode.Tab))
             {
+                _historyOffset = 0;
+
                 if (hasInput)
                 {
                     _viewModel.AutoComplete();
@@ -347,7 +360,42 @@ namespace Soyo.SoyoRuntimeConsole.View
                 }
             }
 
-            if (Input.GetKeyDown(KeyCode.UpArrow))
+            // SHIFT+↑/↓: 历史命令导航
+            var shiftHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            if (_showConsole && shiftHeld && Input.GetKeyDown(KeyCode.UpArrow))
+            {
+                _historyOffset++;
+                if (_viewModel.RestoreHistoryEntry(_historyOffset))
+                {
+                    inputField.SetTextWithoutNotify(_viewModel.InputText);
+                    inputField.caretPosition = inputField.text.Length;
+                    _outputView.ConsiderInput();
+                }
+                else
+                {
+                    _historyOffset--;
+                }
+            }
+            else if (_showConsole && shiftHeld && Input.GetKeyDown(KeyCode.DownArrow))
+            {
+                if (_historyOffset > 0)
+                {
+                    _historyOffset--;
+                    if (_historyOffset == 0)
+                    {
+                        inputField.SetTextWithoutNotify(string.Empty);
+                        _viewModel.SetInputText(string.Empty);
+                        _outputView.ConsiderInput();
+                    }
+                    else if (_viewModel.RestoreHistoryEntry(_historyOffset))
+                    {
+                        inputField.SetTextWithoutNotify(_viewModel.InputText);
+                        inputField.caretPosition = inputField.text.Length;
+                        _outputView.ConsiderInput();
+                    }
+                }
+            }
+            else if (Input.GetKeyDown(KeyCode.UpArrow))
             {
                 if (hasInput)
                 {
@@ -355,8 +403,7 @@ namespace Soyo.SoyoRuntimeConsole.View
                     _outputView.RebuildView(false);
                 }
             }
-
-            if (Input.GetKeyDown(KeyCode.DownArrow))
+            else if (Input.GetKeyDown(KeyCode.DownArrow))
             {
                 if (hasInput)
                 {
@@ -368,6 +415,7 @@ namespace Soyo.SoyoRuntimeConsole.View
             if (Input.GetKeyDown(toggleVisibilityKey))
             {
                 _showConsole = !_showConsole;
+                _historyOffset = 0;
                 inputField.SetTextWithoutNotify(string.Empty);
                 view.gameObject.SetActive(_showConsole);
             }
@@ -400,6 +448,7 @@ namespace Soyo.SoyoRuntimeConsole.View
             // 该发送命令
             if (value.Contains('\n'))
             {
+                _historyOffset = 0;
                 _viewModel.SendInput();
                 inputField.SetTextWithoutNotify(string.Empty);
                 _outputView.ConsiderInput();
@@ -407,6 +456,7 @@ namespace Soyo.SoyoRuntimeConsole.View
             }
 
             // 正常的修改
+            _historyOffset = 0;
             _viewModel.SetInputText(value);
             _outputView.ConsiderInput();
         }
