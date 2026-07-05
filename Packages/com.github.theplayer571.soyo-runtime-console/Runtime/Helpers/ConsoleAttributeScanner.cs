@@ -180,14 +180,8 @@ namespace Soyo.SoyoRuntimeConsole.Helpers
                 return null;
             }
 
-            // 3. 默认参数检查 — 打印信息但不跳过（构建阶段自动展开为多个命令变体）
+            // 3. 默认参数检查 — 构建阶段自动展开为多个命令变体
             var parameters = method.GetParameters();
-            if (parameters.Any(p => p.HasDefaultValue))
-            {
-                Debug.Log(
-                    $"[ConsoleCommand] '{method.DeclaringType!.FullName}.{method.Name}' has default parameter(s). " +
-                    "Multiple command variants will be generated automatically in the build phase.");
-            }
 
             // 4. ref / out 参数检查 — 警告
             foreach (var param in parameters)

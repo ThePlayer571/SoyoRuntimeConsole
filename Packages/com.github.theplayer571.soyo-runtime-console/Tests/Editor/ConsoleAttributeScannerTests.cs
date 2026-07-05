@@ -405,15 +405,11 @@ namespace Soyo.SoyoRuntimeConsole.Tests.Editor
         #region 警告场景
 
         [Test]
-        public void ScanClass_DefaultParameter_LogsInfoAndDoesNotSkip()
+        public void ScanClass_DefaultParameter_DoesNotSkip()
         {
-            LogAssert.Expect(LogType.Log,
-                "[ConsoleCommand] 'Soyo.SoyoRuntimeConsole.Tests.Editor.ConsoleAttributeScannerTests+DefaultParamFixture.WithDefault' " +
-                "has default parameter(s). Multiple command variants will be generated automatically in the build phase.");
-
             var (pendingCommands, _) = ConsoleAttributeScanner.ScanClass(typeof(DefaultParamFixture));
 
-            // 默认参数方法不应被跳过
+            // 默认参数方法不应被跳过（不再打印信息日志）
             Assert.That(pendingCommands.Count, Is.EqualTo(1));
             Assert.That(pendingCommands[0].CommandName.Name, Is.EqualTo("default_param"));
         }

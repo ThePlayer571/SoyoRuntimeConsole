@@ -1,9 +1,6 @@
 ## AI不要读这部分！
 
 ```
-默认参数展开不提示
-
-
 
 CommandLineAnalyzer 缓存分析数据
 - ConsoleCommandDesc注释改成中文的
