@@ -324,6 +324,10 @@ namespace Soyo.SoyoRuntimeConsole.View
             _outputView.ShowStackTrace = showStackTraceOnStart;
 
             view.gameObject.SetActive(_showConsole);
+            if (_showConsole)
+            {
+                StartCoroutine(FocusInputField());
+            }
         }
 
         private void Update()
@@ -418,6 +422,10 @@ namespace Soyo.SoyoRuntimeConsole.View
                 _historyOffset = 0;
                 inputField.SetTextWithoutNotify(string.Empty);
                 view.gameObject.SetActive(_showConsole);
+                if (_showConsole)
+                {
+                    StartCoroutine(FocusInputField());
+                }
             }
         }
 
@@ -526,6 +534,13 @@ namespace Soyo.SoyoRuntimeConsole.View
                     _ => string.Empty
                 };
             }
+        }
+
+        private IEnumerator FocusInputField()
+        {
+            yield return null; // wait one frame for the view to be fully active
+            inputField.Select();
+            inputField.ActivateInputField();
         }
 
         private static string Highlight(string text, IEnumerable<string> keywords)
