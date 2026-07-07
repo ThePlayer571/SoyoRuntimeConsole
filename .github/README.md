@@ -18,8 +18,7 @@
     - 支持自定义控制台UI，你只需与可读性极佳的 ConsoleViewModel 交互
     - 支持自定义参数解析器，解析任意参数
 - 性能优化
-    - 使用 ConsoleBuilder 限定 Attribute 扫描范围
-    - 命令解析器使用缓存提高解析效率
+    - 使用 ConsoleBuilder 限定 Attribute 扫描范围=
 
 ## 安装
 
@@ -31,6 +30,10 @@
 ## 快速开始
 
 1. 从 `Soyo Runtime Console/Runtime/Prefabs` 中拖入 `SimpleConsole.prefab` 到场景中。（需要额外创建EventSystem）
+
+> 注意：自带的 TMP 字体只支持ASCII字符。如果你想显示中文，请使用自定义字体。
+> 默认字体叫 Maple Mono，下载地址：https://github.com/subframe7536/Maple-font
+
 2. 新建类，定义 ConsoleCommand：
 
 ```csharp
@@ -122,7 +125,9 @@ public class ConsoleCommands
 
 ### 默认参数
 
-[ConsoleCommand] 支持带默认值的参数。对于带有默认参数的方法，系统会在构建阶段自动展开为多个命令变体。
+使用 [ConsoleCommand] 定义命令时，可以使用默认参数。系统会将默认参数展开，生成多条命令。
+
+示例：
 
 ```csharp
 [ConsoleCommand]
@@ -132,13 +137,31 @@ public static void spawn_enemy(int count, string type = "grunt", float speed = 1
 }
 ```
 
-上面的代码会自动生成三个命令变体：
+上面的代码会生成三个命令：
 
 - `spawn_enemy <Integer: count>`
 - `spawn_enemy <Integer: count> <String: type>`
 - `spawn_enemy <Integer: count> <String: type> <Float: speed>`
 
 > 默认参数必须位于参数列表末尾（C# 语法规则）。
+
+### 使用 FixedFieldAttribute
+
+有时候，你希望玩家输入固定的字段，此时可以使用 [FixedField] 标记参数。
+
+示例：
+
+```csharp
+[ConsoleCommand]
+public static void spawn_enemy(int count, [FixedField] object player_pos) // 约定：必须使用 object 类型
+{
+    // ...
+}
+```
+
+玩家需要输入：`spawn_enemy 5 player_pos` 执行命令。
+
+> 更多信息请见 FixedFieldAttribute 的注释。
 
 ### 自定义UI
 
