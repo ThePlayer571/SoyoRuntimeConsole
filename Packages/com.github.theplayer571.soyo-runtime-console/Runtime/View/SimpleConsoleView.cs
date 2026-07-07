@@ -294,6 +294,11 @@ namespace Soyo.SoyoRuntimeConsole.View
 
         public static SimpleConsoleView Instance { get; private set; }
 
+        /// <summary>
+        /// 控制台是否处于打开（可见）状态。
+        /// </summary>
+        public bool IsOpen => _showConsole;
+
         private void Awake()
         {
             if (isSingleton)
@@ -437,6 +442,8 @@ namespace Soyo.SoyoRuntimeConsole.View
             _viewModel.OnLogEntry -= OnLogEntry;
         }
 
+        #region 内部函数
+
         private void OnValueChanged(string value)
         {
             if (value.Contains('\t'))
@@ -559,5 +566,7 @@ namespace Soyo.SoyoRuntimeConsole.View
             string pattern = string.Join("|", validKeywords.Select(Regex.Escape));
             return Regex.Replace(text, pattern, m => $"<color=white>{m.Value}<color=grey>");
         }
+
+        #endregion
     }
 }
